@@ -55,13 +55,7 @@ public sealed class Archetype : IEquatable<Archetype>
 
     public bool Has(EcsHandle componentType)
     {
-        return Key.Types.Contains(componentType.Id);
-    }
-
-    public bool HasTarget(EcsHandle componentType)
-    {
-        //TODO: Mask
-        return Key.Types.Contains(componentType.Id);
+        return Key.HasType(componentType);
     }
 
     public bool Equals(Archetype? other)

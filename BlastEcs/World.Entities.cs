@@ -16,11 +16,11 @@ public sealed partial class EcsWorld
         return CreateEntity([]);
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     public EcsHandle CreateEntity<T0>() where T0 : struct
     {
         // [Variadic: CopyLines()]
-        var handle_T0 = GetHandleToType<T0>().Id;
+        var handle_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(handle)]
         var key = new TypeCollectionKeyNoAlloc([handle_T0]);
         return CreateEntity(key);
@@ -31,7 +31,7 @@ public sealed partial class EcsWorld
         Span<ulong> typeHandles = stackalloc ulong[types.Length];
         for (int i = 0; i < types.Length; i++)
         {
-            typeHandles[i] = GetHandleToType(types[i]).Id;
+            typeHandles[i] = GetHandleToInstantiableType(types[i]).Id;
         }
         return CreateEntity(new TypeCollectionKeyNoAlloc(typeHandles));
     }

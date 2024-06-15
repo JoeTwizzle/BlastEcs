@@ -6,7 +6,7 @@ namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
-    const int VariadicCount = 3;
+    const int VariadicCount = 11;
     [Variadic(nameof(T0), VariadicCount)]
     public bool Has<T0>(EcsHandle entity) where T0 : struct
     {
@@ -54,7 +54,7 @@ public sealed partial class EcsWorld
         return ref Unsafe.NullRef<T>();
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     public void Add<T0>(EcsHandle entity) where T0 : struct
     {
         var src = GetEntityIndex(entity).Archetype;
@@ -62,7 +62,7 @@ public sealed partial class EcsWorld
         MoveEntity(entity, src, dest);
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     public void Remove<T0>(EcsHandle entity) where T0 : struct
     {
         var src = GetEntityIndex(entity).Archetype;

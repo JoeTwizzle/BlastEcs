@@ -55,6 +55,8 @@ public readonly struct EcsHandle
     /// 8 Bit Flags.
     /// </summary>
     public byte Flags => (byte)((_id >> 56) & 0xFFul);
-
+    /// <summary>
+    /// Whether the current handle is pair of two handles
+    /// </summary>
     public bool IsPair => (Flags & EntityFlags.IsPair) != 0;
 }

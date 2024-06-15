@@ -15,9 +15,10 @@ internal static class Helpers
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<TTo> Cast<TFrom, TTo>(this ReadOnlySpan<TFrom> span)
-where TFrom : unmanaged
-where TTo : unmanaged
+    where TFrom : unmanaged
+    where TTo : unmanaged
     {
         return MemoryMarshal.Cast<TFrom, TTo>(span);
     }
+
 }

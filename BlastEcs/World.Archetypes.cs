@@ -90,11 +90,11 @@ public sealed partial class EcsWorld
         return GetArchetype(new([]));
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     public Archetype GetArchetype<T0>() where T0 : struct
     {
         // [Variadic: CopyLines()]
-        var handle_T0 = GetHandleToType<T0>().Id;
+        var handle_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(handle)]
         var key = new TypeCollectionKeyNoAlloc([handle_T0]);
         return GetArchetype(key);
@@ -109,11 +109,11 @@ public sealed partial class EcsWorld
         return CreateArchetype(new(key));
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     private Archetype GetArchetypeAdd<T0>(Archetype currentArchetype) where T0 : struct
     {
         // [Variadic: CopyLines()]
-        var addedId_T0 = GetHandleToType<T0>().Id;
+        var addedId_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(addedId)]
         var key = new TypeCollectionKeyNoAlloc([addedId_T0]);
         if (currentArchetype.Edges.TryGetEdgeAdd(key, out var newArch))
@@ -130,11 +130,11 @@ public sealed partial class EcsWorld
         return newArch;
     }
 
-    [Variadic(nameof(T0), 10)]
+    [Variadic(nameof(T0), VariadicCount)]
     private Archetype GetArchetypeRemove<T0>(Archetype currentArchetype) where T0 : struct
     {
         // [Variadic: CopyLines()]
-        var removedId_T0 = GetHandleToType<T0>().Id;
+        var removedId_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(removedId)]
         var key = new TypeCollectionKeyNoAlloc([removedId_T0]);
         return RemoveArchetypeShared(key, currentArchetype);

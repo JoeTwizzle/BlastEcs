@@ -1,6 +1,7 @@
 ﻿using BlastEcs.Builtin;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,8 @@ public sealed partial class EcsWorld
 {
     private static byte s_worldCounter;
     private readonly byte _worldId;
-    EcsHandle _anyHandle;
+    internal const int AnyId = 2;
+    public EcsHandle AnyEntity { get; }
     public EcsWorld()
     {
         _worldId = s_worldCounter++;
@@ -49,6 +51,7 @@ public sealed partial class EcsWorld
         entityIndex.ArchetypeIndex = arch.AddEntity(entity, tableIndex);
 
         //Register "Any" Special type
-        _anyHandle = GetHandleToType<Any>();
+        AnyEntity = GetHandleToType<Any>();
+        Debug.Assert(AnyEntity.Entity == AnyId);
     }
 }

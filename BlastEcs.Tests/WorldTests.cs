@@ -213,4 +213,25 @@ internal class WorldTests
         world.AddRelation(e, identifier, target);
         Assert.That(world.Has(e, identifier, target), Is.True);
     }
+
+    [Test]
+    public void WorldHasAnyRelationEntityTest()
+    {
+        var e = world.CreateEntity([]);
+        var identifier = world.CreateEntity([]);
+        var target = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+
+        Assert.That(world.Has<Any>(e), Is.False);
+        Assert.That(world.Has<Any>(e, target), Is.False);
+        Assert.That(world.Has(e, identifier, world.AnyEntity), Is.False);
+        Assert.That(world.Has(e, identifier, target), Is.False);
+
+        world.AddRelation(e, identifier, target);
+
+        Assert.That(world.Has<Any>(e), Is.True);
+        Assert.That(world.Has<Any>(e, target), Is.True);
+        Assert.That(world.Has(e, identifier, world.AnyEntity), Is.True);
+        Assert.That(world.Has(e, identifier, target), Is.True);
+    }
 }

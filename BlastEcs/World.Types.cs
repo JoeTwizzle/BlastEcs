@@ -89,8 +89,32 @@ public sealed partial class EcsWorld
         return CreateHandle(type);
     }
 
+    public EcsHandle GetHandleToInstantiableType(Type type)
+    {
+        if (type == typeof(Any))
+        {
+            ThrowHelper.ThrowArgumentException("The type \"Any\" is only valid for queries");
+        }
+
+        if (_typeMap.TryGetValue(type, out var handle))
+        {
+            return handle;
+        }
+        return CreateHandle(type);
+    }
+
     public EcsHandle GetHandleToType<T>() where T : struct
     {
+        return GetHandleToType(typeof(T));
+    }
+
+    public EcsHandle GetHandleToInstantiableType<T>() where T : struct
+    {
+        if (typeof(T) == typeof(Any))
+        {
+            ThrowHelper.ThrowArgumentException("The type \"Any\" is only valid for queries");
+        }
+
         return GetHandleToType(typeof(T));
     }
 
