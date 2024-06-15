@@ -17,6 +17,7 @@ public sealed class MaskedGrowList<T>
 
     public int Count => _count;
     public int Capacity => _array.Length;
+    public ReadOnlySpan<T> Span => _array.AsSpan(0, _count);
 
     public MaskedGrowList(int initialSize = 4)
     {

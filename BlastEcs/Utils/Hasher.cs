@@ -10,11 +10,10 @@ namespace BlastEcs.Utils;
 
 public static class Hasher
 {
-    public static unsafe ulong Hash(Span<ulong> data)
+    public static unsafe ulong Hash(ReadOnlySpan<ulong> data)
     {
         unchecked
         {
-            data.Sort();
             ulong hashCode = 17;
             for (int i = 0; i < data.Length; i++)
             {

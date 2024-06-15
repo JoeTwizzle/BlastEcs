@@ -14,7 +14,7 @@ namespace BlastEcs;
 public sealed class Table : IEquatable<Table>
 {
     public TypeCollectionKey Key => _key;
-    public Edges<Table> Edges => _edges;
+    //public Edges<Table> Edges => _edges;
     public int Count => _count;
     public int Capacity => _capacity;
     public int Id => _id;
@@ -24,7 +24,7 @@ public sealed class Table : IEquatable<Table>
     private readonly TypeCollectionKey _key;
     private readonly Array[] _components;
     private readonly Dictionary<Type, int> _typeIndices;
-    private readonly Edges<Table> _edges;
+    //private readonly Edges<Table> _edges;
     private int _count;
     private int _capacity;
 
@@ -36,7 +36,7 @@ public sealed class Table : IEquatable<Table>
         _components = new Array[componentTypes.Length];
         _capacity = initialCapacity;
         _typeIndices = new(_components.Length);
-        _edges = new Edges<Table>();
+        //_edges = new Edges<Table>();
         for (int i = 0; i < _components.Length; i++)
         {
             _typeIndices.Add(componentTypes[i], i);
@@ -55,6 +55,21 @@ public sealed class Table : IEquatable<Table>
         return index;
     }
 
+    public int AddRange(int amount)
+    {
+        if (amount <= 0)
+        {
+            ThrowHelper.ThrowArgumentException();
+        }
+        while (_count + amount > _capacity)
+        {
+            Resize();
+        }
+        int index = _count;
+        _count += amount;
+        return index;
+    }
+
     public void RemoveAt(int index)
     {
         _count--;
@@ -64,20 +79,17 @@ public sealed class Table : IEquatable<Table>
         }
     }
 
-    public int AddEntities(int amount)
+    public void RemoveRange(int index, int count)
     {
-        if (amount < 1)
+        if (count <= 0)
         {
-            ThrowHelper.ThrowArgumentException("Amount must be greater than zero");
+            ThrowHelper.ThrowArgumentException();
         }
-
-        while (_count + amount > _capacity)
+        _count -= count;
+        for (int i = 0; i < _components.Length; i++)
         {
-            Resize();
+            Array.Copy(_components[i], _count, _components[i], index, count);
         }
-        int index = _count;
-        _count += amount;
-        return index;
     }
 
     internal void CopyComponents(int srcIndex, Table dest, int destIndex, int count)

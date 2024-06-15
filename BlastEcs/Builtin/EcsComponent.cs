@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BlastEcs.Builtin;
 
-public readonly struct EcsComponent
+internal readonly struct EcsComponent
 {
     public readonly Type ComponentType;
 

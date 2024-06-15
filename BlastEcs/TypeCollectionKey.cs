@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlastEcs;
 
@@ -16,6 +17,11 @@ public readonly struct TypeCollectionKey
     {
         Array.Sort(types);
         _types = types;
+    }
+
+    public TypeCollectionKey(TypeCollectionKeyNoAlloc key)
+    {
+        _types = key.Types.ToArray();
     }
 
     public override bool Equals(object? obj)
@@ -47,4 +53,6 @@ public readonly struct TypeCollectionKey
     {
         return !(left == right);
     }
+
+    public static implicit operator TypeCollectionKeyNoAlloc(TypeCollectionKey key) => new TypeCollectionKeyNoAlloc(key._types);
 }

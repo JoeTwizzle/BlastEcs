@@ -11,12 +11,12 @@ public sealed class Archetype : IEquatable<Archetype>
     public int Id => _id;
     public Table Table => _table;
     public Edges<Archetype> Edges => _edges;
-    public MaskedGrowList<(uint entity, int tableIndex)> TableIndices => _tableIndices;
+    public GrowList<(EcsHandle entity, int tableIndex)> TableIndices => _tableIndices;
 
     private readonly Edges<Archetype> _edges;
     private readonly Table _table;
     private readonly int _id;
-    private readonly MaskedGrowList<(uint entity, int tableIndex)> _tableIndices;
+    private readonly GrowList<(EcsHandle entity, int tableIndex)> _tableIndices;
 
     public Archetype(int id, Table table, TypeCollectionKey key)
     {
@@ -27,17 +27,24 @@ public sealed class Archetype : IEquatable<Archetype>
         _tableIndices = new();
     }
 
-    public int AddEntity(uint entity, int tableIndex)
+    public int AddEntity(EcsHandle entity, int tableIndex)
     {
         int index = _tableIndices.Count;
         _tableIndices.Add((entity, tableIndex));
         return index;
     }    
 
-    public int AddEntity((uint entity, int tableIndex) item)
+    public int AddEntity((EcsHandle entity, int tableIndex) item)
     {
         int index = _tableIndices.Count;
         _tableIndices.Add(item);
+        return index;
+    }
+
+    public int AddEntities(ReadOnlySpan<(EcsHandle entity, int tableIndex)> items)
+    {
+        int index = _tableIndices.Count;
+        _tableIndices.AddRange(items);
         return index;
     }
 

@@ -25,6 +25,7 @@ public sealed partial class EcsWorld
         Type[] types = new Type[typeEntities.Length];
         for (int i = 0; i < typeEntities.Length; i++)
         {
+            //This is wrong for pairs          
             types[i] = GetRef<EcsComponent>(typeEntities[i]).ComponentType;
         }
 
@@ -35,7 +36,7 @@ public sealed partial class EcsWorld
         return table;
     }
 
-    private Table GetTable(TypeCollectionKey key)
+    private Table GetTable(TypeCollectionKeyNoAlloc key)
     {
         if (_tableMap.TryGetValue(key, out int id))
         {
@@ -56,20 +57,20 @@ public sealed partial class EcsWorld
 
         if (count == components.Length)
         {
-            return CreateTable(key);
+            return CreateTable(new(key));
         }
         else
         {
-            var key2 = new TypeCollectionKey(handles.ToArray());
+            var key2 = new TypeCollectionKeyNoAlloc(handles);
             if (_tableMap.TryGetValue(key2, out id))
             {
                 return _tables[id];
             }
-            return CreateTable(key2);
+            return CreateTable(new(key2));
         }
     }
 
-    private Table? TryGetTable(TypeCollectionKey key)
+    private Table? TryGetTable(TypeCollectionKeyNoAlloc key)
     {
         if (_tableMap.TryGetValue(key, out int id))
         {

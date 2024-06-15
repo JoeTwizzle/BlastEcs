@@ -59,7 +59,7 @@ public sealed class LongKeyMap<TValue>
         return FindEntry(key) >= 0;
     }
 
-    public bool TryGetValue(ulong key, out TValue? value)
+    public bool TryGetValue(ulong key, [NotNullWhen(true)] out TValue? value)
     {
         int i = FindEntry(key);
         if (i >= 0)
@@ -209,7 +209,12 @@ public sealed class LongKeyMap<TValue>
         _freeList = -1;
     }
 
-    struct LongKeyMapEnumerator(LongKeyMap<TValue> map)
+    public LongKeyMapEnumerator GetEnumerator()
+    {
+        return new LongKeyMapEnumerator(this);
+    }
+
+    public struct LongKeyMapEnumerator(LongKeyMap<TValue> map)
     {
         readonly LongKeyMap<TValue> _map = map;
         int i = -1;

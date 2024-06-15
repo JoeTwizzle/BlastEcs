@@ -2,12 +2,12 @@
 
 public ref struct KeyValueRef<TKey, TValue>
 {
-    public TKey Index;
+    public TKey Key;
     public ref TValue Value;
 
     public KeyValueRef(TKey index, ref TValue value)
     {
-        Index = index;
+        Key = index;
         Value = ref value;
     }
 }

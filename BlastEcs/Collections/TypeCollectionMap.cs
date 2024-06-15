@@ -36,7 +36,7 @@ public sealed class TypeCollectionMap<TValue>
         _freeList = -1;
     }
 
-    public ref TValue this[TypeCollectionKey key]
+    public ref TValue this[TypeCollectionKeyNoAlloc key]
     {
         get
         {
@@ -54,13 +54,13 @@ public sealed class TypeCollectionMap<TValue>
         Insert(key, value);
     }
 
-    public ref TValue GetValueRefOrAddDefault(TypeCollectionKey key, out bool existed)
+    public ref TValue GetValueRefOrAddDefault(TypeCollectionKeyNoAlloc key, out bool existed)
     {
         int i = FindEntry(key);
         if (i < 0)
         {
             existed = false;
-            i = Insert(key, default!);
+            i = Insert(new(key), default!);
         }
         else
         {
@@ -69,12 +69,27 @@ public sealed class TypeCollectionMap<TValue>
         return ref _entries[i].Value!;
     }
 
-    public bool Contains(TypeCollectionKey key)
+    public ref TValue GetValueRefOrNullRef(TypeCollectionKeyNoAlloc key, out bool existed)
+    {
+        int i = FindEntry(key);
+        if (i < 0)
+        {
+            existed = false;
+            return ref Unsafe.NullRef<TValue>();
+        }
+        else
+        {
+            existed = true;
+            return ref _entries[i].Value!;
+        }
+    }
+
+    public bool Contains(TypeCollectionKeyNoAlloc key)
     {
         return FindEntry(key) >= 0;
     }
 
-    public bool TryGetValue(TypeCollectionKey key, out TValue? value)
+    public bool TryGetValue(TypeCollectionKeyNoAlloc key, out TValue? value)
     {
         int i = FindEntry(key);
         if (i >= 0)
@@ -86,13 +101,13 @@ public sealed class TypeCollectionMap<TValue>
         return false;
     }
 
-    public bool Remove(TypeCollectionKey key)
+    public bool Remove(TypeCollectionKeyNoAlloc key)
     {
         ulong bucket = key.GetHash() % (ulong)_buckets.Length;
         int last = -1;
         for (int i = _buckets[bucket]; i >= 0; last = i, i = _entries[i].Next)
         {
-            if (_entries[i].Key == key)
+            if (key == _entries[i].Key)
             {
                 if (last < 0)
                 {
@@ -122,7 +137,7 @@ public sealed class TypeCollectionMap<TValue>
         //Find last free bucket
         for (int i = _buckets[targetBucket]; i >= 0; i = _entries[i].Next)
         {
-            if (_entries[i].Key == key)
+            if (key == _entries[i].Key)
             {
                 ThrowHelper.ThrowArgumentException("Adding duplicate key");
                 return -1;
@@ -177,11 +192,11 @@ public sealed class TypeCollectionMap<TValue>
         _entries = newEntries;
     }
 
-    private int FindEntry(TypeCollectionKey key)
+    private int FindEntry(TypeCollectionKeyNoAlloc key)
     {
         for (int i = _buckets[key.GetHash() % (ulong)_buckets.Length]; i >= 0; i = _entries[i].Next)
         {
-            if (_entries[i].Key == key)
+            if (key == _entries[i].Key)
             {
                 return i;
             }
@@ -196,7 +211,12 @@ public sealed class TypeCollectionMap<TValue>
         _freeList = -1;
     }
 
-    struct TypeCollectionMapEnumerator(TypeCollectionMap<TValue> map)
+    public TypeCollectionMapEnumerator GetEnumerator()
+    {
+        return new TypeCollectionMapEnumerator(this);
+    }
+
+    public struct TypeCollectionMapEnumerator(TypeCollectionMap<TValue> map)
     {
         readonly TypeCollectionMap<TValue> _map = map;
         int i = -1;

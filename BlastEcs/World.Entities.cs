@@ -1,26 +1,14 @@
-﻿using BlastEcs.Collections;
+﻿using BlastEcs.Builtin;
+using BlastEcs.Collections;
 using System.Buffers.Binary;
 using System.Numerics;
 
 namespace BlastEcs;
-struct EntityIndex
-{
-    public short Generation;
-    public Archetype Archetype;
-    public int ArchetypeIndex;
-
-    public EntityIndex(short generation, Archetype archetype, int archetypeIndex)
-    {
-        Generation = generation;
-        Archetype = archetype;
-        ArchetypeIndex = archetypeIndex;
-    }
-}
 public sealed partial class EcsWorld
 {
     private uint entityCount;
     readonly EcsHandle emptyEntity;
-    readonly GrowList<EntityIndex> _entities;
+    readonly FastMap<EntityIndex> _entities;
     readonly GrowList<uint> _deadEntities;
 
     public EcsHandle CreateEntity()
@@ -28,38 +16,113 @@ public sealed partial class EcsWorld
         return CreateEntity([]);
     }
 
+    [Variadic(nameof(T0), 10)]
+    public EcsHandle CreateEntity<T0>() where T0 : struct
+    {
+        // [Variadic: CopyLines()]
+        var handle_T0 = GetHandleToType<T0>().Id;
+        // [Variadic: CopyArgs(handle)]
+        var key = new TypeCollectionKeyNoAlloc([handle_T0]);
+        return CreateEntity(key);
+    }
+
     public EcsHandle CreateEntity(ReadOnlySpan<Type> types)
     {
-        var typeHandles = new ulong[types.Length];
+        Span<ulong> typeHandles = stackalloc ulong[types.Length];
         for (int i = 0; i < types.Length; i++)
         {
             typeHandles[i] = GetHandleToType(types[i]).Id;
         }
-        return CreateEntity(new TypeCollectionKey(typeHandles));
+        return CreateEntity(new TypeCollectionKeyNoAlloc(typeHandles));
     }
 
-    public EcsHandle CreateEntity(TypeCollectionKey key)
+    public EcsHandle CreateEntity(TypeCollectionKeyNoAlloc key)
+    {
+        return CreateEntity(GetArchetype(key));
+    }
+
+    public EcsHandle CreateEntity(Archetype archetype)
     {
         uint id = GetNextEntityId();
 
-        ref EntityIndex entityIndex = ref _entities[id];
-        var arch = entityIndex.Archetype = GetArchetype(key);
+        ref EntityIndex entityIndex = ref GetEntityIndex(id);
+        var arch = entityIndex.Archetype = archetype;
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        var entity = new EcsHandle(id, gen, worldId);
+        var entity = new EcsHandle(id, gen, _worldId, EntityFlags.None);
         var tableIndex = arch.Table.Add();
-        entityIndex.ArchetypeIndex = arch.AddEntity(entity.Entity, tableIndex);
+        entityIndex.ArchetypeIndex = arch.AddEntity(entity, tableIndex);
+        OnEntityCreated?.Invoke(entity);
         return entity;
+    }
+
+    private EcsHandle CreatePair(EcsHandle kind, EcsHandle target, TypeCollectionKeyNoAlloc key)
+    {
+        var handle = new EcsHandle(kind, target);
+        ref EntityIndex entityIndex = ref GetEntityIndex(handle);
+        var arch = entityIndex.Archetype = GetArchetype(key);
+        entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
+        var tableIndex = arch.Table.Add();
+        entityIndex.ArchetypeIndex = arch.AddEntity(handle, tableIndex);
+        return handle;
     }
 
     public void DestroyEntity(EcsHandle entity)
     {
-        ref EntityIndex entityIndex = ref _entities[entity.Entity];
+        ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
         var pair = arch.TableIndices[entityIndex.ArchetypeIndex];
         arch.RemoveEntityAt(entityIndex.ArchetypeIndex);
         arch.Table.RemoveAt(pair.tableIndex);
         entityIndex.Generation = (short)-entityIndex.Generation;
-        _deadEntities.Add(entity.Entity);
+
+        //Recycle id if entity is not a pair
+        if (!entity.IsPair)
+        {
+            _deadEntities.Add(entity.Entity);
+        }
+        RemoveRefrencesTo(entity);
+        OnEntityDestroyed?.Invoke(entity);
+    }
+
+    private void RemoveRefrencesTo(EcsHandle entity)
+    {
+        if (!entity.IsPair)
+        {
+            if (_archetypeTypeMap.TryGetValue(entity.Entity, out var archetypes))
+            {
+                RemoveEntityFromArchetypes(entity, archetypes);
+                _archetypeTypeMap.Remove(entity.Entity);
+            }
+            if (_archetypePairMap.TryGetValue(entity.Entity, out var pairs))
+            {
+                foreach (var pair in pairs)
+                {
+                    RemoveRefrencesTo(new(pair));
+                }
+                _archetypePairMap.Remove(entity.Entity);
+            }
+        }
+        else
+        {
+            //Get archetypes that contain this pair
+            if (_archetypeTypeMap.TryGetValue(entity.Id, out var archetypes))
+            {
+                RemoveEntityFromArchetypes(entity, archetypes);
+            }
+            _archetypeTypeMap.Remove(entity.Id);
+        }
+    }
+
+    private void RemoveEntityFromArchetypes(EcsHandle entity, GrowList<int> archetypes)
+    {
+        var list = archetypes.Span;
+        for (int i = 0; i < list.Length; i++)
+        {
+            var oldArch = _archetypes[list[i]];
+            var newArch = GetArchetypeRemove(oldArch, entity);
+            MoveAllEntities(oldArch, newArch);
+            DestroyArchetype(oldArch);
+        }
     }
 
     private uint GetNextEntityId()
@@ -71,18 +134,30 @@ public sealed partial class EcsWorld
             return ent;
         }
         uint id = ++entityCount;
-        _entities.Add();
         return id;
     }
 
     public bool IsAlive(EcsHandle entity)
     {
-        uint index = entity.Entity;
-        return index < _entities.Count && entity.Generation > 0 && GetEntityIndex(entity).Generation == entity.Generation;
+        short gen = GetEntityIndex(entity).Generation;
+        if (entity.IsPair)
+        {
+            return gen > 0;
+        }
+        return entity.Generation > 0 && gen == entity.Generation;
     }
 
     private ref EntityIndex GetEntityIndex(EcsHandle entity)
     {
-        return ref _entities[entity.Entity];
+        if (entity.IsPair)
+        {
+            return ref _entities.GetOrCreateRefAt(entity.Id);
+        }
+        return ref _entities.GetOrCreateRefAt(entity.Entity);
+    }
+
+    private ref EntityIndex GetEntityIndex(uint index)
+    {
+        return ref _entities.GetOrCreateRefAt(index);
     }
 }

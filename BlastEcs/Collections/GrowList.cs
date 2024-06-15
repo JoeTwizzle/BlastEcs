@@ -16,6 +16,7 @@ public sealed class GrowList<T>
 
     public int Count => _count;
     public int Capacity => _array.Length;
+    public ReadOnlySpan<T> Span => _array.AsSpan(0, _count);
 
     public GrowList(int initialSize = 4)
     {
@@ -38,6 +39,16 @@ public sealed class GrowList<T>
             Resize();
         }
         _array[_count++] = value;
+    }
+
+    public void AddRange(ReadOnlySpan<T> value)
+    {
+        while (_count + value.Length > _array.Length)
+        {
+            Resize();
+        }
+        value.CopyTo(_array.AsSpan(_count));
+        _count += value.Length;
     }
 
     private void Resize()

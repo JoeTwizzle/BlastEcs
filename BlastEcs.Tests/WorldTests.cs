@@ -46,9 +46,10 @@ internal class WorldTests
     [Test]
     public void WorldCreateManyTestComponentTest()
     {
+        var arch = world.GetArchetype<TestComponent>();
         for (var i = 0; i < 10000; i++)
         {
-            var e = world.CreateEntity([typeof(TestComponent)]);
+            var e = world.CreateEntity(arch);
             Assert.That(world.IsAlive(e), Is.True);
             Assert.That(world.Has<TestComponent>(e), Is.True);
             Assert.That(world.GetRef<TestComponent>(e).TestValue, Is.EqualTo(0));
@@ -67,9 +68,10 @@ internal class WorldTests
     [Test]
     public void WorldCreateManyTestTagTest()
     {
+        var arch = world.GetArchetype<TestTag>();
         for (var i = 0; i < 10000; i++)
         {
-            var e = world.CreateEntity([typeof(TestTag)]);
+            var e = world.CreateEntity(arch);
             Assert.That(world.IsAlive(e), Is.True);
             Assert.That(world.Has<TestTag>(e), Is.True);
             Assert.Throws<ArgumentException>(() => world.GetRef<TestTag>(e));
@@ -149,5 +151,66 @@ internal class WorldTests
         Assert.That(world.IsAlive(e), Is.True);
         world.DestroyEntity(e);
         Assert.That(world.IsAlive(e), Is.False);
+    }
+
+    [Test]
+    public void WorldAddPairTest()
+    {
+        var e = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.HasRelation<TestComponent, TestComponent>(e), Is.False);
+        world.AddPair<TestComponent, TestComponent>(e);
+        Assert.That(world.HasRelation<TestComponent, TestComponent>(e), Is.True);
+    }
+
+    [Test]
+    public void WorldAddRelationTest()
+    {
+        var e = world.CreateEntity([]);
+        var target = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has<TestComponent>(e, target), Is.False);
+        world.AddRelation<TestComponent>(e, target);
+        Assert.That(world.Has<TestComponent>(e, target), Is.True);
+    }
+
+    [Test]
+    public void WorldAddRemoveRelationTest()
+    {
+        var e = world.CreateEntity([]);
+        var target = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has<TestComponent>(e, target), Is.False);
+        world.AddRelation<TestComponent>(e, target);
+        Assert.That(world.Has<TestComponent>(e, target), Is.True);
+        world.DestroyEntity(target);
+        Assert.That(world.Has<TestComponent>(e, target), Is.False);
+    }
+
+    [Test]
+    public void WorldAddRemoveRelationTest2()
+    {
+        var e = world.CreateEntity([]);
+        var kind = world.CreateEntity([]);
+        var target = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has(e, kind, target), Is.False);
+        world.AddRelation(e, kind, target);
+        Assert.That(world.Has(e, kind, target), Is.True);
+        world.DestroyEntity(kind);
+        world.DestroyEntity(target);
+        Assert.That(world.Has(e, kind, target), Is.False);
+    }
+
+    [Test]
+    public void WorldAddRelationEntityTest()
+    {
+        var e = world.CreateEntity([]);
+        var identifier = world.CreateEntity([]);
+        var target = world.CreateEntity([]);
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has(e, identifier, target), Is.False);
+        world.AddRelation(e, identifier, target);
+        Assert.That(world.Has(e, identifier, target), Is.True);
     }
 }

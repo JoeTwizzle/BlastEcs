@@ -18,13 +18,13 @@ public sealed class Edges<T> where T : class
         public T Remove;
     }
 
-    readonly LongKeyMap<Edge> map;
+    private readonly TypeCollectionMap<Edge> map;
     public Edges()
     {
-        map = new LongKeyMap<Edge>();
+        map = new TypeCollectionMap<Edge>();
     }
 
-    internal void AddEdgeAdd(ulong key, T item)
+    internal void AddEdgeAdd(TypeCollectionKey key, T item)
     {
         ref var edge = ref map.GetValueRefOrAddDefault(key, out var exists);
         if (exists)
@@ -37,7 +37,7 @@ public sealed class Edges<T> where T : class
         edge.Add = item;
     }
 
-    internal void AddEdgeRemove(ulong key, T item)
+    internal void AddEdgeRemove(TypeCollectionKey key, T item)
     {
         ref var edge = ref map.GetValueRefOrAddDefault(key, out var exists);
         if (exists)
@@ -50,7 +50,25 @@ public sealed class Edges<T> where T : class
         edge.Remove = item;
     }
 
-    public bool TryGetEdgeAdd(ulong key, [NotNullWhen(true)] out T? item)
+    internal void RemoveEdgeAdd(TypeCollectionKeyNoAlloc key)
+    {
+        ref var edge = ref map.GetValueRefOrNullRef(key, out var exists);
+        if (exists)
+        {
+            edge.Add = default;
+        }
+    }
+
+    internal void RemoveEdgeRemove(TypeCollectionKeyNoAlloc key)
+    {
+        ref var edge = ref map.GetValueRefOrNullRef(key, out var exists);
+        if (exists)
+        {
+            edge.Remove = default;
+        }
+    }
+
+    public bool TryGetEdgeAdd(TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
     {
         if (map.TryGetValue(key, out var edge))
         {
@@ -61,7 +79,7 @@ public sealed class Edges<T> where T : class
         return false;
     }
 
-    public bool TryGetEdgeRemove(ulong key, [NotNullWhen(true)] out T? item)
+    public bool TryGetEdgeRemove(TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
     {
         if (map.TryGetValue(key, out var edge))
         {
@@ -72,21 +90,26 @@ public sealed class Edges<T> where T : class
         return false;
     }
 
-    public T GetEdgeAdd(ulong key)
+    public T GetEdgeAdd(TypeCollectionKeyNoAlloc key)
     {
         return map[key].Add;
     }
 
-    public T GetEdgeRemove(ulong key)
+    public T GetEdgeRemove(TypeCollectionKeyNoAlloc key)
     {
         return map[key].Remove;
     }
 
-    public Edge this[ulong key]
+    public Edge this[TypeCollectionKeyNoAlloc key]
     {
         get
         {
             return map[key];
         }
+    }
+
+    public TypeCollectionMap<Edge>.TypeCollectionMapEnumerator GetEnumerator()
+    {
+        return map.GetEnumerator();
     }
 }
