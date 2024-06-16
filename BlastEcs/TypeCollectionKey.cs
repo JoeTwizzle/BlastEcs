@@ -77,8 +77,8 @@ public readonly struct TypeCollectionKey
             {
                 Span<ulong> maskedItems = stackalloc ulong[_types.Length];
                 Types.CopyTo(maskedItems);
-                maskedItems.MaskBits(0x0000000000FFFFFF);
-                return maskedItems.Contains(handle.Entity);
+                maskedItems.MaskBits(0x00FFFFFF00000000);
+                return maskedItems.Contains(((ulong)handle.Entity) << 32);
             }
 
             //Does the key contain any relationships with the given target
@@ -86,8 +86,8 @@ public readonly struct TypeCollectionKey
             {
                 Span<ulong> maskedItems = stackalloc ulong[_types.Length];
                 Types.CopyTo(maskedItems);
-                maskedItems.MaskBits(0x00FFFFFF00000000);
-                return maskedItems.Contains(((ulong)handle.Target) << 32);
+                maskedItems.MaskBits(0x0000000000FFFFFF);
+                return maskedItems.Contains(handle.Target);
             }
 
             return Types.Contains(handle.Id);
