@@ -3,16 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace BlastEcs;
 
-public readonly struct EcsHandle
+public readonly partial struct EcsHandle
 {
     readonly ulong _id;
 
-    public EcsHandle(EcsHandle kindHandle, EcsHandle targetHandle)
+    public EcsHandle(EcsHandle kindHandle, EcsHandle targetHandle, byte flags = EntityFlags.None)
     {
-        _id = ((ulong)targetHandle.Entity | (((ulong)kindHandle.Entity) << 32)) | (((ulong)EntityFlags.IsPair) << 56);
+        flags |= EntityFlags.IsPair;
+        _id = ((ulong)targetHandle.Entity | (((ulong)kindHandle.WorldId) << 24) | (((ulong)kindHandle.Entity) << 32)) | (((ulong)flags) << 56);
     }
 
     public EcsHandle(ulong id)
@@ -27,9 +29,9 @@ public readonly struct EcsHandle
         _id = low | ((ulong)high << 32);
     }
 
-    //High -> LOW
-    // 16 Bit Generation | 8 Bit Unused | 8 Bit WorldId | 24 Bit Entity Id  | 8 Bit Flags
-    // 24 Bit Target Id                 | 8 Bit WorldId | 24 Bit Entity Id  | 8 Bit Flags
+    //LOW -> HIGH
+    //ENTITY|: 16 Bit Generation | 8 Bit Unused | 8 Bit WorldId | 24 Bit Entity Id  | 8 Bit Flags
+    //PAIR  |: 24 Bit Target Id                 | 8 Bit WorldId | 24 Bit Entity Id  | 8 Bit Flags
     public ulong Id => _id;
 
     /// <summary>
@@ -40,7 +42,7 @@ public readonly struct EcsHandle
     /// <summary>
     /// 8 Bit world Id.
     /// </summary>
-    public byte World => (byte)((_id >> 24) & 0xFFul);
+    public byte WorldId => (byte)((_id >> 24) & 0xFFul);
     /// <summary>
     /// 16 Bit generation Id.
     /// Only valid if Pair flag is NOT present
@@ -59,4 +61,8 @@ public readonly struct EcsHandle
     /// Whether the current handle is pair of two handles
     /// </summary>
     public bool IsPair => (Flags & EntityFlags.IsPair) != 0;
+    /// <summary>
+    /// Whether the current handle forces the pair to act as a tag when used in a relation
+    /// </summary>
+    public bool IsTagRelation => (Flags & EntityFlags.IsTagRelation) != 0;
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BlastEcs.Builtin;
+namespace BlastEcs.Tests;
 
 public struct TestComponent
 {

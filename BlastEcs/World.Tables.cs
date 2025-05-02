@@ -24,8 +24,7 @@ public sealed partial class EcsWorld
         var typeEntities = key.Types.Cast<ulong, EcsHandle>();
         Type[] types = new Type[typeEntities.Length];
         for (int i = 0; i < typeEntities.Length; i++)
-        {
-            //This is wrong for pairs          
+        {   
             types[i] = GetRef<EcsComponent>(typeEntities[i]).ComponentType;
         }
 
@@ -45,7 +44,7 @@ public sealed partial class EcsWorld
 
         int count = 0;
         var components = key.Types.Cast<ulong, EcsHandle>();
-        Span<ulong> handles = components.Length <= 64 ? stackalloc ulong[64] : stackalloc ulong[components.Length];
+        Span<ulong> handles = components.Length <= StackallocCount ? stackalloc ulong[StackallocCount] : stackalloc ulong[components.Length];
         for (int i = 0; i < components.Length; i++)
         {
             if (IsComponent(components[i]))

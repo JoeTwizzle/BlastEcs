@@ -11,28 +11,37 @@ namespace BlastEcs;
 public sealed partial class EcsWorld
 {
     readonly Dictionary<Type, EcsHandle> _typeMap;
-    readonly LongKeyMap<EcsHandle> _handleMap;
 
     private bool IsComponent(EcsHandle entity)
     {
-        return GetEntityIndex(entity).Archetype == _componentArchetype;
+        return GetEntityIndex(entity).Archetype.Has(_componentHandle);
     }
 
     private static bool IsTag(Type type)
     {
-        return type.GetInterface("ITag") != null;
+        return typeof(ITag).IsAssignableFrom(type);
+    }
+
+    private static bool IsTagRelation(Type type)
+    {
+        return typeof(ITagRelation).IsAssignableFrom(type);
     }
 
     private EcsHandle CreateHandle(Type type)
     {
         EcsHandle markerEntity;
+        byte flags = 0;
+        if (IsTagRelation(type))
+        {
+            flags |= EntityFlags.IsTagRelation;
+        }
         if (IsTag(type))
         {
-            markerEntity = CreateEntity();
+            markerEntity = CreateEntity(_entityArchetype, flags);
         }
         else
         {
-            markerEntity = CreateEntity([typeof(EcsComponent)]);
+            markerEntity = CreateEntity(_componentArchetype, flags);
             GetRef<EcsComponent>(markerEntity) = new(type);
         }
 
@@ -40,6 +49,7 @@ public sealed partial class EcsWorld
         return markerEntity;
     }
 
+    //TODO
     private void RemoveHandle(Type type)
     {
         var entity = _typeMap[type];
@@ -47,36 +57,29 @@ public sealed partial class EcsWorld
         _typeMap.Remove(type);
     }
 
-    private void RemoveHandle(EcsHandle handle)
-    {
-        ref var pairEntity = ref _handleMap.GetValueRefOrNullRef(handle.Id, out var exists);
-    }
-
     private EcsHandle CreateHandle(EcsHandle identifier, EcsHandle target)
     {
         EcsHandle markerEntity;
 
-        if (!IsComponent(identifier) && !IsComponent(target))
+        if (identifier.IsTagRelation || (!IsComponent(identifier) && !IsComponent(target)))
         {
-            markerEntity = CreatePair(identifier, target, _entityArchetype.Key);
+            markerEntity = CreatePair(identifier, target, _entityArchetype);
         }
         else if (IsComponent(identifier))
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype.Key);
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
         }
         else if (IsComponent(target))
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype.Key);
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(target);
         }
         else
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype.Key);
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
         }
-        var pair = new EcsHandle(identifier, target);
-        _handleMap.Add(pair.Id, markerEntity);
         return markerEntity;
     }
 
@@ -120,11 +123,44 @@ public sealed partial class EcsWorld
 
     public EcsHandle GetHandleToType(EcsHandle identifier, EcsHandle target)
     {
-        var pair = new EcsHandle(identifier, target);
-        if (_handleMap.TryGetValue(pair.Id, out var handle))
+        var pair = new EcsHandle(identifier, target); // TODO: fixme??
+        if (_entities.GetOrCreateRefAt(pair.Id).Generation > 0)
         {
-            return handle;
+            return pair;
         }
         return CreateHandle(identifier, target);
+    }
+
+    public EcsHandle GetKindHandle(EcsHandle pair)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(pair.Entity);
+        return new EcsHandle(pair.Entity, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetTargetHandle(EcsHandle pair)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(pair.Target);
+        return new EcsHandle(pair.Target, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetEntity(uint id)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(id);
+        return new EcsHandle(id, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetRelationWithIndefiniteTarget(EcsHandle handle)
+    {
+        return GetHandleToType(GetKindHandle(handle), AnyEntity);
+    }
+
+    public EcsHandle GetRelationWithIndefiniteKind(EcsHandle handle)
+    {
+        return GetHandleToType(AnyEntity, GetTargetHandle(handle));
+    }    
+    
+    public EcsHandle GetHandleToInstantiableType(uint kind, uint target)
+    {
+        return GetHandleToType(GetEntity(kind), GetEntity(target));
     }
 }

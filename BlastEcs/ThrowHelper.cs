@@ -29,5 +29,12 @@ static class ThrowHelper
     public static void ThrowInvalidOperationException()
     {
         throw new InvalidOperationException();
+    }    
+    
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowInvalidOperationException(string message)
+    {
+        throw new InvalidOperationException(message);
     }
 }

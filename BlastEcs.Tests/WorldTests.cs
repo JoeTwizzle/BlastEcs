@@ -172,6 +172,8 @@ internal class WorldTests
         Assert.That(world.Has<TestComponent>(e, target), Is.False);
         world.AddRelation<TestComponent>(e, target);
         Assert.That(world.Has<TestComponent>(e, target), Is.True);
+        world.GetRef<TestComponent>(e, target);
+
     }
 
     [Test]
@@ -233,5 +235,18 @@ internal class WorldTests
         Assert.That(world.Has<Any>(e, target), Is.True);
         Assert.That(world.Has(e, identifier, world.AnyEntity), Is.True);
         Assert.That(world.Has(e, identifier, target), Is.True);
+    }
+
+    [Test]
+    public void WorldCreateTestTagRelationTest()
+    {
+        var e = world.CreateEntity<TestTagRelation>();
+        var target = world.CreateEntity<TestComponent>();
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has<TestTagRelation>(e), Is.True);
+        Assert.DoesNotThrow(() => world.GetRef<TestTagRelation>(e));
+        world.AddRelation<TestTagRelation>(e, target);
+        Assert.That(world.Has<TestTagRelation>(e, target), Is.True);
+        Assert.Throws<ArgumentException>(() => world.GetRef<TestTagRelation>(e, target));
     }
 }

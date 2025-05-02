@@ -12,7 +12,7 @@ public sealed class FastMap<T>
     private readonly T[] FastValues;
     private readonly LongKeyMap<T> SlowRange;
 
-    public FastMap(ulong fastRange = 1024)
+    public FastMap(ulong fastRange = 2048)
     {
         FastRange = fastRange;
         FastValues = new T[fastRange];
@@ -28,6 +28,30 @@ public sealed class FastMap<T>
         else
         {
             return ref SlowRange.GetValueRefOrAddDefault(index, out _);
+        }
+    }
+
+    public ref T GetRefAt(ulong index)
+    {
+        if (index < FastRange)
+        {
+            return ref FastValues[index];
+        }
+        else
+        {
+            return ref SlowRange[index];
+        }
+    }
+
+    public ref T TryGetRefAt(ulong index)
+    {
+        if (index < FastRange)
+        {
+            return ref FastValues[index];
+        }
+        else
+        {
+            return ref TryGetRefAt(index);
         }
     }
 }

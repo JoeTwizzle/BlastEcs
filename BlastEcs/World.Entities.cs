@@ -43,26 +43,32 @@ public sealed partial class EcsWorld
 
     public EcsHandle CreateEntity(Archetype archetype)
     {
+        return CreateEntity(archetype, EntityFlags.None);
+    }
+
+    private EcsHandle CreateEntity(Archetype archetype, byte flags)
+    {
         uint id = GetNextEntityId();
 
         ref EntityIndex entityIndex = ref GetEntityIndex(id);
-        var arch = entityIndex.Archetype = archetype;
+        entityIndex.Archetype = archetype;
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        var entity = new EcsHandle(id, gen, _worldId, EntityFlags.None);
-        var tableIndex = arch.Table.Add();
-        entityIndex.ArchetypeIndex = arch.AddEntity(entity, tableIndex);
+        entityIndex.Flags = flags;
+        var entity = new EcsHandle(id, gen, _worldId, flags);
+        var tableIndex = archetype.Table.Add();
+        entityIndex.ArchetypeIndex = archetype.AddEntity(entity, tableIndex);
         OnEntityCreated?.Invoke(entity);
         return entity;
     }
 
-    private EcsHandle CreatePair(EcsHandle kind, EcsHandle target, TypeCollectionKeyNoAlloc key)
+    private EcsHandle CreatePair(EcsHandle kind, EcsHandle target, Archetype archetype)
     {
         var handle = new EcsHandle(kind, target);
         ref EntityIndex entityIndex = ref GetEntityIndex(handle);
-        var arch = entityIndex.Archetype = GetArchetype(key);
+        entityIndex.Archetype = archetype;
         entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        var tableIndex = arch.Table.Add();
-        entityIndex.ArchetypeIndex = arch.AddEntity(handle, tableIndex);
+        var tableIndex = archetype.Table.Add();
+        entityIndex.ArchetypeIndex = archetype.AddEntity(handle, tableIndex);
         return handle;
     }
 
@@ -84,44 +90,76 @@ public sealed partial class EcsWorld
         OnEntityDestroyed?.Invoke(entity);
     }
 
-    private void RemoveRefrencesTo(EcsHandle entity)
+    private void RemoveRefrencesTo(EcsHandle handle)
     {
-        if (!entity.IsPair)
+        //Get archetypes that contain this entity
+        if (_componentIndex.TryGetValue(handle.Id, out var archetypes))
         {
-            if (_archetypeTypeMap.TryGetValue(entity.Entity, out var archetypes))
-            {
-                RemoveEntityFromArchetypes(entity, archetypes);
-                _archetypeTypeMap.Remove(entity.Entity);
-            }
-            if (_archetypePairMap.TryGetValue(entity.Entity, out var pairs))
-            {
-                foreach (var pair in pairs)
-                {
-                    RemoveRefrencesTo(new(pair));
-                }
-                _archetypePairMap.Remove(entity.Entity);
-            }
+            RemoveEntityFromArchetypes(handle, archetypes.ContainingArchetypes.Bits);
+            _componentIndex.Remove(handle.Id);
         }
-        else
+        if (!handle.IsPair)
         {
-            //Get archetypes that contain this pair
-            if (_archetypeTypeMap.TryGetValue(entity.Id, out var archetypes))
+            if (_pairTypeMap.TryGetValue(handle.Entity, out var types))
             {
-                RemoveEntityFromArchetypes(entity, archetypes);
+                var items = types.Items;
+                foreach (var item in items)
+                {
+                    var pairA = GetHandleToType(GetEntity(handle.Entity), GetEntity(item));
+                    if (_componentIndex.TryGetValue(pairA.Id, out var archetypess))
+                    {
+                        RemoveEntityFromArchetypes(pairA, archetypess.ContainingArchetypes.Bits);
+                        _componentIndex.Remove(pairA.Id);
+                    }
+                    var pairB = GetHandleToType(GetEntity(item), GetEntity(handle.Entity));
+                    if (_componentIndex.TryGetValue(pairB.Id, out var archetypesss))
+                    {
+                        RemoveEntityFromArchetypes(pairB, archetypesss.ContainingArchetypes.Bits);
+                        _componentIndex.Remove(pairB.Id);
+                    }
+                }
             }
-            _archetypeTypeMap.Remove(entity.Id);
         }
     }
 
-    private void RemoveEntityFromArchetypes(EcsHandle entity, GrowList<int> archetypes)
+    private void RemoveEntityFromArchetypes(EcsHandle entity, Dictionary<int, int> archetypes)
     {
-        var list = archetypes.Span;
-        for (int i = 0; i < list.Length; i++)
+        foreach (var ids in archetypes.Keys)
         {
-            var oldArch = _archetypes[list[i]];
+            var oldArch = _archetypes[ids];
+
             var newArch = GetArchetypeRemove(oldArch, entity);
             MoveAllEntities(oldArch, newArch);
             DestroyArchetype(oldArch);
+        }
+    }
+    
+    private void RemoveEntityFromArchetypes(EcsHandle entity, ReadOnlySpan<int> archetypes)
+    {
+        foreach (var ids in archetypes)
+        {
+            var oldArch = _archetypes[ids];
+            var newArch = GetArchetypeRemove(oldArch, entity);
+            MoveAllEntities(oldArch, newArch);
+            DestroyArchetype(oldArch);
+        }
+    }
+    
+    private void RemoveEntityFromArchetypes(EcsHandle entity, ReadOnlySpan<ulong> archetypesMask)
+    {
+        for (int idx = 0; idx < archetypesMask.Length; idx++)
+        {
+            long bitItem = (long)archetypesMask[idx];
+            while (bitItem != 0)
+            {
+                int id = idx * (sizeof(ulong) * 8) + BitOperations.TrailingZeroCount(bitItem);
+                bitItem ^= bitItem & -bitItem;
+
+                var oldArch = _archetypes[id];
+                var newArch = GetArchetypeRemove(oldArch, entity);
+                MoveAllEntities(oldArch, newArch);
+                DestroyArchetype(oldArch);
+            }
         }
     }
 
@@ -134,6 +172,7 @@ public sealed partial class EcsWorld
             return ent;
         }
         uint id = ++entityCount;
+        if (id == uint.MaxValue) ThrowHelper.ThrowInvalidOperationException("Maximum number of entities exceded");
         return id;
     }
 

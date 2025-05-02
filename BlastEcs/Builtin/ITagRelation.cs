@@ -1,3 +1,3 @@
 ﻿namespace BlastEcs.Builtin;
 
-public interface ITag;
+public interface ITagRelation;

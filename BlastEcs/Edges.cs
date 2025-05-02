@@ -14,8 +14,8 @@ public sealed class Edges<T> where T : class
 {
     public struct Edge
     {
-        public T Add;
-        public T Remove;
+        public T? Add;
+        public T? Remove;
     }
 
     private readonly TypeCollectionMap<Edge> map;
@@ -92,12 +92,12 @@ public sealed class Edges<T> where T : class
 
     public T GetEdgeAdd(TypeCollectionKeyNoAlloc key)
     {
-        return map[key].Add;
+        return map[key].Add!;
     }
 
     public T GetEdgeRemove(TypeCollectionKeyNoAlloc key)
     {
-        return map[key].Remove;
+        return map[key].Remove!;
     }
 
     public Edge this[TypeCollectionKeyNoAlloc key]

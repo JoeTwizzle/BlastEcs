@@ -1,6 +1,7 @@
 ﻿using BlastEcs.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,16 +20,18 @@ public sealed class Table : IEquatable<Table>
     public int Capacity => _capacity;
     public int Id => _id;
 
+    internal LongKeyMap<int> TypeIndices => _typeIndices;
+
     private readonly int _id;
     private readonly Type[] _componentTypes;
     private readonly TypeCollectionKey _key;
     private readonly Array[] _components;
-    private readonly Dictionary<Type, int> _typeIndices;
+    private readonly LongKeyMap<int> _typeIndices;
     //private readonly Edges<Table> _edges;
     private int _count;
     private int _capacity;
 
-    public Table(int id, Type[] componentTypes, TypeCollectionKey key, int initialCapacity = 4)
+    internal Table(int id, Type[] componentTypes, TypeCollectionKey key, int initialCapacity = 4)
     {
         _id = id;
         _componentTypes = componentTypes;
@@ -36,10 +39,10 @@ public sealed class Table : IEquatable<Table>
         _components = new Array[componentTypes.Length];
         _capacity = initialCapacity;
         _typeIndices = new(_components.Length);
-        //_edges = new Edges<Table>();
+        Debug.Assert(key.Types.Length == componentTypes.Length);
         for (int i = 0; i < _components.Length; i++)
         {
-            _typeIndices.Add(componentTypes[i], i);
+            _typeIndices.Add(key.Types[i], i);
             _components[i] = Array.CreateInstance(componentTypes[i], initialCapacity);
         }
     }
@@ -110,14 +113,24 @@ public sealed class Table : IEquatable<Table>
         }
     }
 
-    public ref T GetRefAt<T>(int index) where T : struct
+    internal ref T GetRefAt<T>(int index, ulong handle) where T : struct
     {
-        if (_typeIndices.TryGetValue(typeof(T), out int i))
+        if (_typeIndices.TryGetValue(handle, out int i))
         {
             return ref ((T[])_components[i])[index];
         }
         ThrowHelper.ThrowArgumentException();
         return ref Unsafe.NullRef<T>();
+    }
+
+    internal T[] GetComponentArray<T>(int componentIndex) where T : struct
+    {
+        return (T[])_components[componentIndex];
+    }
+
+    internal ref T GetRawRefAt<T>(int entityIndex, int componentIndex) where T : struct
+    {
+        return ref ((T[])_components[componentIndex])[entityIndex];
     }
 
     private void Resize()

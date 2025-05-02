@@ -1,6 +1,8 @@
-﻿using BlastEcs.Builtin;
+using BlastEcs.Builtin;
 using BlastEcs.Collections;
+using BlastEcs.Utils;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
@@ -11,8 +13,8 @@ public sealed partial class EcsWorld
     readonly TypeCollectionMap<int> _archetypeMap;
     readonly MaskedGrowList<Archetype> _archetypes;
     readonly GrowList<int> _deadArchetypes;
-    readonly LongKeyMap<GrowList<int>> _archetypeTypeMap;
-    readonly LongKeyMap<HashSet<ulong>> _archetypePairMap;
+    readonly LongKeyMap<ComponentIndexInfo> _componentIndex;
+    readonly Dictionary<uint, PooledList<uint>> _pairTypeMap;
     readonly Archetype _entityArchetype;
     readonly Archetype _componentArchetype;
 
@@ -43,43 +45,44 @@ public sealed partial class EcsWorld
         {
             var handle = new EcsHandle(types[i]);
             //The type is a pair
-            if ((handle.Flags & EntityFlags.IsPair) != 0)
+            ref var info = ref _componentIndex.GetValueRefOrAddDefault(handle.Id, out var exists);
+            if (!exists)
             {
-                ref GrowList<int> growlist = ref _archetypeTypeMap.GetValueRefOrAddDefault(types[i], out var exists);
-                if (!exists)
-                {
-                    growlist = new();
-                }
-                int index = growlist.Count;
-                growlist.Add();
-                growlist[index] = id;
-                //Kind
-                ref HashSet<ulong> pairList = ref _archetypePairMap.GetValueRefOrAddDefault(handle.Entity, out exists);
-                if (!exists)
-                {
-                    pairList = new();
-                }
-                index = pairList.Count;
-                pairList.Add(types[i]);
-                //target
-                pairList = ref _archetypePairMap.GetValueRefOrAddDefault(handle.Target, out exists);
-                if (!exists)
-                {
-                    pairList = new();
-                }
-                index = pairList.Count;
-                pairList.Add(types[i]);
+                info = new();
             }
-            else
+            info.ArchetypeMap.Add(id, i);
+            info.ContainingArchetypes.SetBit(id);
+            if (handle.IsPair)
             {
-                ref GrowList<int> growlist = ref _archetypeTypeMap.GetValueRefOrAddDefault(handle.Entity, out var exists);
+                ref PooledList<uint> list = ref _pairTypeMap.GetRefOrAddDefault(handle.Entity, out exists);
                 if (!exists)
                 {
-                    growlist = new();
+                    list = new();
                 }
-                int index = growlist.Count;
-                growlist.Add();
-                growlist[index] = id;
+                list.Add(handle.Target);
+
+                list = ref _pairTypeMap.GetRefOrAddDefault(handle.Target, out exists);
+                if (!exists)
+                {
+                    list = new();
+                }
+                list.Add(handle.Entity);
+
+                var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
+                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteTarget.Id, out exists);
+                if (!exists)
+                {
+                    info = new();
+                }
+                info.ContainingArchetypes.SetBit(id);
+
+                var indefiniteKind = GetRelationWithIndefiniteKind(handle);
+                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteKind.Id, out exists);
+                if (!exists)
+                {
+                    info = new();
+                }
+                info.ContainingArchetypes.SetBit(id);
             }
         }
         return arch;
@@ -107,6 +110,53 @@ public sealed partial class EcsWorld
             return _archetypes[archetypeId];
         }
         return CreateArchetype(new(key));
+    }
+
+    public void GetArchetypesWith(TypeCollectionKeyNoAlloc key, BitMask validArchetypes, bool init)
+    {
+        for (int i = 0; i < key.Length; i++)
+        {
+            var handle = new EcsHandle(key[i]);
+            var archetypes = _componentIndex[handle.Id];
+            if (i == 0 && init)
+            {
+                validArchetypes.OrBits(archetypes.ContainingArchetypes);
+            }
+            else
+            {
+                validArchetypes.AndBits(archetypes.ContainingArchetypes);
+            }
+        }
+    }
+
+    internal void GetArchetypesWith(Term term, BitMask validArchetypes, bool init)
+    {
+        var archetypes = _componentIndex[term.Match.Id];
+        if (init)
+        {
+            validArchetypes.OrBits(archetypes.ContainingArchetypes);
+        }
+        else
+        {
+            if (term.Exclude)
+            {
+                validArchetypes.ClearBits(archetypes.ContainingArchetypes);
+            }
+            else
+            {
+                validArchetypes.AndBits(archetypes.ContainingArchetypes);
+            }
+        }
+    }
+
+    public void FilterArchetypesWithout(TypeCollectionKeyNoAlloc key, BitMask validArchetypes)
+    {
+        for (int i = 0; i < key.Length; i++)
+        {
+            var handle = new EcsHandle(key[i]);
+            var archetypes = _componentIndex[handle.Id];
+            validArchetypes.ClearBits(archetypes.ContainingArchetypes);
+        }
     }
 
     [Variadic(nameof(T0), VariadicCount)]
@@ -207,7 +257,7 @@ public sealed partial class EcsWorld
         Span<ulong> destA = newTypes.Slice(0, skipIndex);
         Span<ulong> destb = newTypes.Slice(skipIndex, oldTypes.Length - (skipIndex + 1));
         oldTypes.Slice(0, skipIndex).CopyTo(destA);
-        oldTypes.Slice(skipIndex + 1, oldTypes.Length - (skipIndex + 1)).CopyTo(destb);
+        oldTypes.Slice(skipIndex + 1).CopyTo(destb);
 
         newArch = GetArchetype(new(newTypes));
         var key2 = new TypeCollectionKey(key);
@@ -270,5 +320,6 @@ public sealed partial class EcsWorld
             keyValue.Value.Remove?.Edges.RemoveEdgeAdd(keyValue.Key);
             keyValue.Value.Add?.Edges.RemoveEdgeRemove(keyValue.Key);
         }
+        _archetypeMap.Remove(arch.Key);
     }
 }

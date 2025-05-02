@@ -6,7 +6,6 @@ namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
-    const int VariadicCount = 11;
     [Variadic(nameof(T0), VariadicCount)]
     public bool Has<T0>(EcsHandle entity) where T0 : struct
     {
@@ -38,18 +37,39 @@ public sealed partial class EcsWorld
         ref var entityIndex = ref GetEntityIndex(entity);
         Debug.Assert(Has<T>(entity));
         int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
-        return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex);
+        return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType<T>().Id);
+    }
+
+    public ref T GetRef<T>(EcsHandle entity, EcsHandle target) where T : struct
+    {
+        ref var entityIndex = ref GetEntityIndex(entity);
+        Debug.Assert(Has<T>(entity, target));
+        int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+        return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType(GetHandleToType<T>(), target).Id);
     }
 
     public ref T TryGetRef<T>(EcsHandle entity, out bool exists) where T : struct
     {
         EntityIndex entityIndex = GetEntityIndex(entity);
         EcsHandle componentHandle = GetHandleToType<T>();
-        exists = entityIndex.Archetype.Has(componentHandle);
+        exists = entityIndex.Archetype.Table.Key.HasType(componentHandle);
         if (exists)
         {
             int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
-            return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex);
+            return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType<T>().Id);
+        }
+        return ref Unsafe.NullRef<T>();
+    }
+
+    public ref T TryGetRef<T>(EcsHandle entity, EcsHandle target, out bool exists) where T : struct
+    {
+        EntityIndex entityIndex = GetEntityIndex(entity);
+        EcsHandle componentHandle = GetHandleToType<T>();
+        exists = entityIndex.Archetype.Table.Key.HasType(componentHandle);
+        if (exists)
+        {
+            int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+            return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType(GetHandleToType<T>(), target).Id);
         }
         return ref Unsafe.NullRef<T>();
     }

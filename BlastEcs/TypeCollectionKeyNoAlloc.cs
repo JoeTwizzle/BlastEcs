@@ -20,7 +20,7 @@ public readonly ref struct TypeCollectionKeyNoAlloc
     {
 
         types.Sort();
-        first =  ref (types.Length > 0) ? ref types[0] : ref Unsafe.NullRef<ulong>();
+        first = ref (types.Length > 0) ? ref types[0] : ref Unsafe.NullRef<ulong>();
         Length = types.Length;
     }
 
@@ -67,6 +67,15 @@ public readonly ref struct TypeCollectionKeyNoAlloc
     public static bool operator !=(TypeCollectionKeyNoAlloc left, TypeCollectionKey right)
     {
         return !(left == right);
+    }
+
+    public readonly ulong this[int index]
+    {
+        get
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)Length);
+            return Unsafe.Add(ref Unsafe.AsRef(in first), index);
+        }
     }
 }
 

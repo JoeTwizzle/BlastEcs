@@ -6,4 +6,4 @@ using System.Threading.Tasks;
 
 namespace BlastEcs.Builtin;
 
-public struct Any;
+public struct Any : ITag;
