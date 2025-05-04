@@ -1,20 +1,20 @@
-﻿using BlastEcs.Collections;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using BlastEcs.Collections;
 
 namespace BlastEcs;
 
-struct ComponentIndexInfo
+readonly struct ComponentIndexInfo : IDisposable
 {
-    public Dictionary<int, int> ArchetypeMap;
-    public BitMask ContainingArchetypes;
+    public readonly Dictionary<int, int> ArchetypeMap;
+    public readonly BitMask ContainingArchetypes;
 
     public ComponentIndexInfo()
     {
         ArchetypeMap = new();
         ContainingArchetypes = new();
+    }
+
+    public readonly void Dispose()
+    {
+        ContainingArchetypes.Dispose();
     }
 }

@@ -1,10 +1,5 @@
-﻿using BlastEcs.Builtin;
-using System;
-using System.Collections.Generic;
+using BlastEcs.Builtin;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlastEcs;
 
@@ -27,19 +22,19 @@ public sealed partial class EcsWorld
         _deadEntities = new();
         _archetypeMap = new();
         _tableMap = new();
-        _typeMap = [];
+        _typeRegistry = [];
         _pairTypeMap = new();
         _componentIndex = new();
         _deadArchetypes = new();
         //Reserve first index for empty entity
-        emptyEntity = new EcsHandle(0, 0, _worldId);
+        _emptyEntity = new EcsHandle(0, 0, _worldId);
         _entityArchetype = CreateArchetype(new([]));
         //We need to manually register this component as we otherwise have a circular dependency
         uint componentEntityId = GetNextEntityId();
         ref EntityIndex entityIndex = ref GetEntityIndex(componentEntityId);
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         var componentEntity = _componentHandle = new EcsHandle(componentEntityId, gen, _worldId);
-        _typeMap.Add(typeof(EcsComponent), componentEntity);
+        _typeRegistry.Add(typeof(EcsComponent).TypeHandle, componentEntity);
 
         //The table for the archetype also needs to be created
         var key = new TypeCollectionKey([componentEntity.Id]);

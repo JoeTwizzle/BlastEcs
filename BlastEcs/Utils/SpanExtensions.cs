@@ -1,6 +1,5 @@
-﻿using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Intrinsics;
 
 namespace BlastEcs.Utils;
 

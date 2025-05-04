@@ -1,10 +1,4 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using BlastEcs.Helpers;
 
 namespace BlastEcs.Collections;
 
@@ -41,7 +35,7 @@ public sealed class SparseSet<TValue>
         int denseIndex = _indirect[key];
         //remove from entry
         _indirect[key] = 0;
-        if (denseIndex == _denseCount-1)
+        if (denseIndex == _denseCount - 1)
         {
             _values[denseIndex] = default!;
             return;

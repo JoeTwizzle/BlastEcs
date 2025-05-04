@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace BlastEcs;
+namespace BlastEcs.Helpers;
 
 static class ThrowHelper
 {
@@ -29,8 +24,8 @@ static class ThrowHelper
     public static void ThrowInvalidOperationException()
     {
         throw new InvalidOperationException();
-    }    
-    
+    }
+
     [DoesNotReturn]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void ThrowInvalidOperationException(string message)

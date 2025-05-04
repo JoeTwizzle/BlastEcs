@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Numerics;
+using BlastEcs.Helpers;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlastEcs.Collections;
 
+/// <summary>
+/// A dictionary specialized for TypeCollectionKeys
+/// </summary>
+/// <typeparam name="TValue"></typeparam>
 public sealed class TypeCollectionMap<TValue>
 {
     private struct Entry

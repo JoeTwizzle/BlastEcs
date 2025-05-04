@@ -1,11 +1,6 @@
-﻿using BlastEcs.Builtin;
+using BlastEcs.Builtin;
 using BlastEcs.Collections;
 using BlastEcs.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlastEcs;
 
@@ -24,7 +19,7 @@ public sealed partial class EcsWorld
         var typeEntities = key.Types.Cast<ulong, EcsHandle>();
         Type[] types = new Type[typeEntities.Length];
         for (int i = 0; i < typeEntities.Length; i++)
-        {   
+        {
             types[i] = GetRef<EcsComponent>(typeEntities[i]).ComponentType;
         }
 

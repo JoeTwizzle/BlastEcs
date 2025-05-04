@@ -1,12 +1,6 @@
-﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlastEcs.Collections;
 
@@ -141,7 +135,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         ResizeIfNeeded(mask._count);
         TensorPrimitives.BitwiseOr(Bits, mask.Bits, _bits);
     }
-    
+
     public void OrBits(ReadOnlySpan<ulong> mask)
     {
         ResizeIfNeeded(mask.Length);

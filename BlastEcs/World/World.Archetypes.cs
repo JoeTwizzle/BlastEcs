@@ -2,7 +2,6 @@ using BlastEcs.Builtin;
 using BlastEcs.Collections;
 using BlastEcs.Utils;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
@@ -10,13 +9,16 @@ public sealed partial class EcsWorld
 {
     private int archetypeCount;
 
-    readonly TypeCollectionMap<int> _archetypeMap;
-    readonly MaskedGrowList<Archetype> _archetypes;
-    readonly GrowList<int> _deadArchetypes;
-    readonly LongKeyMap<ComponentIndexInfo> _componentIndex;
-    readonly Dictionary<uint, PooledList<uint>> _pairTypeMap;
-    readonly Archetype _entityArchetype;
-    readonly Archetype _componentArchetype;
+    /// <summary>
+    /// Maps a type key to an archetype id
+    /// </summary>
+    private readonly TypeCollectionMap<int> _archetypeMap;
+    private readonly MaskedGrowList<Archetype> _archetypes;
+    private readonly GrowList<int> _deadArchetypes;
+    private readonly LongKeyMap<ComponentIndexInfo> _componentIndex;
+    private readonly Dictionary<uint, PooledList<uint>> _pairTypeMap;
+    private readonly Archetype _entityArchetype;
+    private readonly Archetype _componentArchetype;
 
     private int GetArchetypeId()
     {
@@ -39,8 +41,8 @@ public sealed partial class EcsWorld
         Debug.Assert(_archetypes.Count == id);
         _archetypes.Add(arch);
 
+        //Register presence of components
         var types = key.Types;
-
         for (int i = 0; i < types.Length; i++)
         {
             var handle = new EcsHandle(types[i]);
@@ -187,10 +189,10 @@ public sealed partial class EcsWorld
         var removedId_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(removedId)]
         var key = new TypeCollectionKeyNoAlloc([removedId_T0]);
-        return RemoveArchetypeShared(key, currentArchetype);
+        return RemoveArchetypeImpl(key, currentArchetype);
     }
 
-    private Archetype RemoveArchetypeShared(TypeCollectionKeyNoAlloc key, Archetype currentArchetype)
+    private Archetype RemoveArchetypeImpl(TypeCollectionKeyNoAlloc key, Archetype currentArchetype)
     {
         if (currentArchetype.Edges.TryGetEdgeRemove(key, out var newArch))
         {

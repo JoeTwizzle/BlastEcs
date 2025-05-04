@@ -1,4 +1,4 @@
-﻿using BlastEcs.Collections;
+using BlastEcs.Collections;
 
 namespace BlastEcs;
 
@@ -11,6 +11,7 @@ public sealed class Archetype : IEquatable<Archetype>
     public int Id => _id;
     public Table Table => _table;
     public Edges<Archetype> Edges => _edges;
+    //Index of an entity in a table's component arrays
     public GrowList<(EcsHandle entity, int tableIndex)> TableIndices => _tableIndices;
 
     private readonly Edges<Archetype> _edges;
@@ -32,7 +33,7 @@ public sealed class Archetype : IEquatable<Archetype>
         int index = _tableIndices.Count;
         _tableIndices.Add((entity, tableIndex));
         return index;
-    }    
+    }
 
     public int AddEntity((EcsHandle entity, int tableIndex) item)
     {

@@ -1,4 +1,4 @@
-﻿using BlastEcs.Builtin;
+using BlastEcs.Builtin;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -17,7 +17,7 @@ public sealed partial class EcsWorld
 
     public bool Has(EcsHandle entity, EcsHandle identifier, EcsHandle target)
     {
-        return GetEntityIndex(entity).Archetype.Has(GetHandleToType(identifier, target));
+        return GetEntityIndex(entity).Archetype.Has(GetHandleToPair(identifier, target));
     }
 
     public bool Has<TKind>(EcsHandle entity, EcsHandle target) where TKind : struct
@@ -45,7 +45,7 @@ public sealed partial class EcsWorld
         ref var entityIndex = ref GetEntityIndex(entity);
         Debug.Assert(Has<T>(entity, target));
         int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
-        return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType(GetHandleToType<T>(), target).Id);
+        return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToPair(GetHandleToType<T>(), target).Id);
     }
 
     public ref T TryGetRef<T>(EcsHandle entity, out bool exists) where T : struct
@@ -69,7 +69,7 @@ public sealed partial class EcsWorld
         if (exists)
         {
             int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
-            return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType(GetHandleToType<T>(), target).Id);
+            return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToPair(GetHandleToType<T>(), target).Id);
         }
         return ref Unsafe.NullRef<T>();
     }
@@ -97,7 +97,7 @@ public sealed partial class EcsWorld
         var kindHandle = GetHandleToType<TKind>();
         var targetHandle = GetHandleToType<TTarget>();
 
-        var componentHandle = GetHandleToType(kindHandle, targetHandle);
+        var componentHandle = GetHandleToPair(kindHandle, targetHandle);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeAdd(src, componentHandle);
@@ -114,7 +114,7 @@ public sealed partial class EcsWorld
 
     public void AddRelation(EcsHandle entity, EcsHandle identifier, EcsHandle target)
     {
-        var componentHandle = GetHandleToType(identifier, target);
+        var componentHandle = GetHandleToPair(identifier, target);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeAdd(src, componentHandle);
@@ -128,7 +128,7 @@ public sealed partial class EcsWorld
         var kindHandle = GetHandleToType<TKind>();
         var targetHandle = GetHandleToType<TTarget>();
 
-        var componentHandle = GetHandleToType(kindHandle, targetHandle);
+        var componentHandle = GetHandleToPair(kindHandle, targetHandle);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeRemove(src, componentHandle);
@@ -145,7 +145,7 @@ public sealed partial class EcsWorld
 
     public void RemoveRelation(EcsHandle entity, EcsHandle identifier, EcsHandle target)
     {
-        var componentHandle = GetHandleToType(identifier, target);
+        var componentHandle = GetHandleToPair(identifier, target);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeRemove(src, componentHandle);

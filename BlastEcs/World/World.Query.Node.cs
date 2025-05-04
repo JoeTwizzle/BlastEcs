@@ -1,10 +1,5 @@
-﻿using BlastEcs.Collections;
-using System;
-using System.Collections.Frozen;
-using System.Collections.Immutable;
-using System.Net.Http.Headers;
+using BlastEcs.Collections;
 using System.Numerics;
-using static BlastEcs.EcsWorld.Query;
 
 namespace BlastEcs;
 

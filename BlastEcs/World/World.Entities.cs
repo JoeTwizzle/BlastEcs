@@ -1,15 +1,15 @@
-﻿using BlastEcs.Builtin;
+using BlastEcs.Builtin;
 using BlastEcs.Collections;
-using System.Buffers.Binary;
+using BlastEcs.Helpers;
 using System.Numerics;
 
 namespace BlastEcs;
 public sealed partial class EcsWorld
 {
-    private uint entityCount;
-    readonly EcsHandle emptyEntity;
-    readonly FastMap<EntityIndex> _entities;
-    readonly GrowList<uint> _deadEntities;
+    private uint _entityCount;
+    private readonly EcsHandle _emptyEntity;
+    private readonly FastMap<EntityIndex> _entities;
+    private readonly GrowList<uint> _deadEntities;
 
     public EcsHandle CreateEntity()
     {
@@ -31,7 +31,7 @@ public sealed partial class EcsWorld
         Span<ulong> typeHandles = stackalloc ulong[types.Length];
         for (int i = 0; i < types.Length; i++)
         {
-            typeHandles[i] = GetHandleToInstantiableType(types[i]).Id;
+            typeHandles[i] = GetHandleToInstantiableType(types[i].TypeHandle).Id;
         }
         return CreateEntity(new TypeCollectionKeyNoAlloc(typeHandles));
     }
@@ -57,7 +57,10 @@ public sealed partial class EcsWorld
         var entity = new EcsHandle(id, gen, _worldId, flags);
         var tableIndex = archetype.Table.Add();
         entityIndex.ArchetypeIndex = archetype.AddEntity(entity, tableIndex);
-        OnEntityCreated?.Invoke(entity);
+        if (EntityEventsEnabled)
+        {
+            OnEntityCreated?.Invoke(entity);
+        }
         return entity;
     }
 
@@ -87,41 +90,52 @@ public sealed partial class EcsWorld
             _deadEntities.Add(entity.Entity);
         }
         RemoveRefrencesTo(entity);
-        OnEntityDestroyed?.Invoke(entity);
+        if (EntityEventsEnabled)
+        {
+            OnEntityDestroyed?.Invoke(entity);
+        }
     }
 
     private void RemoveRefrencesTo(EcsHandle handle)
     {
         //Get archetypes that contain this entity
-        if (_componentIndex.TryGetValue(handle.Id, out var archetypes))
+        if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
         {
-            RemoveEntityFromArchetypes(handle, archetypes.ContainingArchetypes.Bits);
+            RemoveEntityFromArchetypes(handle, compInfo.ContainingArchetypes.Bits);
             _componentIndex.Remove(handle.Id);
+            compInfo.Dispose();
         }
-        if (!handle.IsPair)
+        if (handle.IsPair)
         {
-            if (_pairTypeMap.TryGetValue(handle.Entity, out var types))
+            return;
+        }
+        //Get types that use this entity in a relationship
+        if (_pairTypeMap.TryGetValue(handle.Entity, out var types))
+        {
+            var items = types.Items;
+            foreach (var item in items)
             {
-                var items = types.Items;
-                foreach (var item in items)
+                //This entity is the Kind
+                var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(item));
+                if (_componentIndex.TryGetValue(pairA.Id, out var compInfo2))
                 {
-                    var pairA = GetHandleToType(GetEntity(handle.Entity), GetEntity(item));
-                    if (_componentIndex.TryGetValue(pairA.Id, out var archetypess))
-                    {
-                        RemoveEntityFromArchetypes(pairA, archetypess.ContainingArchetypes.Bits);
-                        _componentIndex.Remove(pairA.Id);
-                    }
-                    var pairB = GetHandleToType(GetEntity(item), GetEntity(handle.Entity));
-                    if (_componentIndex.TryGetValue(pairB.Id, out var archetypesss))
-                    {
-                        RemoveEntityFromArchetypes(pairB, archetypesss.ContainingArchetypes.Bits);
-                        _componentIndex.Remove(pairB.Id);
-                    }
+                    RemoveEntityFromArchetypes(pairA, compInfo2.ContainingArchetypes.Bits);
+                    _componentIndex.Remove(pairA.Id);
+                    compInfo2.Dispose();
+                }
+                //This entity is the Target
+                var pairB = GetHandleToPair(GetEntity(item), GetEntity(handle.Entity));
+                if (_componentIndex.TryGetValue(pairB.Id, out var compInfo3))
+                {
+                    RemoveEntityFromArchetypes(pairB, compInfo3.ContainingArchetypes.Bits);
+                    _componentIndex.Remove(pairB.Id);
+                    compInfo3.Dispose();
                 }
             }
         }
     }
 
+    //TODO: Unused?
     private void RemoveEntityFromArchetypes(EcsHandle entity, Dictionary<int, int> archetypes)
     {
         foreach (var ids in archetypes.Keys)
@@ -133,7 +147,7 @@ public sealed partial class EcsWorld
             DestroyArchetype(oldArch);
         }
     }
-    
+    //TODO: Unused?
     private void RemoveEntityFromArchetypes(EcsHandle entity, ReadOnlySpan<int> archetypes)
     {
         foreach (var ids in archetypes)
@@ -144,7 +158,7 @@ public sealed partial class EcsWorld
             DestroyArchetype(oldArch);
         }
     }
-    
+
     private void RemoveEntityFromArchetypes(EcsHandle entity, ReadOnlySpan<ulong> archetypesMask)
     {
         for (int idx = 0; idx < archetypesMask.Length; idx++)
@@ -171,7 +185,7 @@ public sealed partial class EcsWorld
             _deadEntities.RemoveAtDense(_deadEntities.Count - 1);
             return ent;
         }
-        uint id = ++entityCount;
+        uint id = ++_entityCount;
         if (id == uint.MaxValue) ThrowHelper.ThrowInvalidOperationException("Maximum number of entities exceded");
         return id;
     }
@@ -198,5 +212,74 @@ public sealed partial class EcsWorld
     private ref EntityIndex GetEntityIndex(uint index)
     {
         return ref _entities.GetOrCreateRefAt(index);
+    }
+
+    public EcsHandle GetHandleToPair(EcsHandle identifier, EcsHandle target)
+    {
+        var pair = new EcsHandle(identifier, target);
+        if (_entities.GetOrCreateRefAt(pair.Id).Generation > 0)
+        {
+            return pair;
+        }
+        return CreatePair(identifier, target);
+    }
+
+    private EcsHandle CreatePair(EcsHandle identifier, EcsHandle target)
+    {
+        EcsHandle markerEntity;
+
+        if (identifier.IsTagRelation || (!IsComponent(identifier) && !IsComponent(target)))
+        {
+            markerEntity = CreatePair(identifier, target, _entityArchetype);
+        }
+        else if (IsComponent(identifier))
+        {
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
+            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
+        }
+        else if (IsComponent(target))
+        {
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
+            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(target);
+        }
+        else
+        {
+            markerEntity = CreatePair(identifier, target, _componentArchetype);
+            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
+        }
+        return markerEntity;
+    }
+
+    public EcsHandle GetKindHandle(EcsHandle pair)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(pair.Entity);
+        return new EcsHandle(pair.Entity, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetTargetHandle(EcsHandle pair)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(pair.Target);
+        return new EcsHandle(pair.Target, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetEntity(uint id)
+    {
+        ref EntityIndex entityIndex = ref GetEntityIndex(id);
+        return new EcsHandle(id, entityIndex.Generation, _worldId, entityIndex.Flags);
+    }
+
+    public EcsHandle GetRelationWithIndefiniteTarget(EcsHandle handle)
+    {
+        return GetHandleToPair(GetKindHandle(handle), AnyEntity);
+    }
+
+    public EcsHandle GetRelationWithIndefiniteKind(EcsHandle handle)
+    {
+        return GetHandleToPair(AnyEntity, GetTargetHandle(handle));
+    }
+
+    public EcsHandle GetHandleToInstantiablePair(uint kind, uint target)
+    {
+        return GetHandleToPair(GetEntity(kind), GetEntity(target));
     }
 }

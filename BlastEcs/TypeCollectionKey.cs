@@ -1,13 +1,5 @@
-﻿using BlastEcs.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
+using BlastEcs.Utils;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlastEcs;
 

@@ -1,23 +1,5 @@
-﻿using BlastEcs.Builtin;
-using BlastEcs.Collections;
-using BlastEcs.Utils;
-using System;
-using System.Buffers;
-using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Numerics;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static BlastEcs.EcsWorld;
 using static BlastEcs.EcsWorld.Query;
 
 namespace BlastEcs;
@@ -271,31 +253,31 @@ public sealed partial class EcsWorld
 
         private void RegisterSimple<T0>(bool exclude = false) where T0 : struct
         {
-            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType<T0>(), _world.emptyEntity, OperationTarget.Default, exclude));
+            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType<T0>(), _world._emptyEntity, OperationTarget.Default, exclude));
         }
 
         private void RegisterRelation(EcsHandle kind, EcsHandle target, bool exclude = false)
         {
-            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType(kind, target), _world.emptyEntity, OperationTarget.Default, exclude));
+            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToPair(kind, target), _world._emptyEntity, OperationTarget.Default, exclude));
         }
 
         private void RegisterIndefiniteTargetRelation(EcsHandle kind, string id, bool exclude = false)
         {
             int index = GetOrRegisterIdentifier(id);
-            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType(kind, _world.AnyEntity), _world.emptyEntity, null, index, OperationTarget.Default, exclude));
+            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToPair(kind, _world.AnyEntity), _world._emptyEntity, null, index, OperationTarget.Default, exclude));
         }
 
         private void RegisterIndefiniteKindRelation(string id, EcsHandle target, bool exclude = false)
         {
             int index = GetOrRegisterIdentifier(id);
-            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType(_world.AnyEntity, target), _world.emptyEntity, index, null, OperationTarget.Default, exclude));
+            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToPair(_world.AnyEntity, target), _world._emptyEntity, index, null, OperationTarget.Default, exclude));
         }
 
         private void RegisterIndefinitePair(string id, string id2, bool exclude = false)
         {
             var index1 = GetOrRegisterIdentifier(id);
             var index2 = GetOrRegisterIdentifier(id2);
-            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToType(_world.AnyEntity, _world.AnyEntity), _world.emptyEntity, index1, index2, OperationTarget.Default, exclude));
+            _nodes[currentSource].Terms.Add(new Term(_world.GetHandleToPair(_world.AnyEntity, _world.AnyEntity), _world._emptyEntity, index1, index2, OperationTarget.Default, exclude));
         }
 
         private int GetOrRegisterIdentifier(string target)
