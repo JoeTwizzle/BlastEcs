@@ -4,7 +4,7 @@ namespace BlastEcs.Tests;
 
 public class SparseSetTests
 {
-    SparseSet<int> set;
+    SparseMap<int> set;
 
     [SetUp]
     public void Setup()

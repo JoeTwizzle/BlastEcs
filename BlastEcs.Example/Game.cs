@@ -15,12 +15,15 @@ sealed class Game
 
     public void Run()
     {
-        //Run until any key is pressed
-        while (!Console.KeyAvailable)
+        var world = new EcsWorld();
+        for (int i = 0; i < 10; i++)
         {
-            //var ball = world.CreateEntity<Position>();
-
-            BounceSystem();
+            var e = world.CreateEntity<Position>();
+            var kind = world.CreateEntity<Position>();
+            var target = world.CreateEntity<Position>();
+            world.AddRelation(e, kind, target);
+            world.DestroyEntity(kind);
+            world.DestroyEntity(target);
         }
     }
 

@@ -1,5 +1,6 @@
 using BlastEcs.Utils;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
@@ -7,6 +8,7 @@ public readonly struct TypeCollectionKey
 {
     private readonly ulong[] _types;
     public readonly ReadOnlySpan<ulong> Types => _types;
+    public readonly ReadOnlySpan<EcsHandle> Handles => MemoryMarshal.Cast<ulong, EcsHandle>(_types);
 
     public TypeCollectionKey(ulong[] types)
     {

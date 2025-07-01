@@ -14,9 +14,16 @@ static class ThrowHelper
 
     [DoesNotReturn]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ThrowArgumentException(string message)
+    public static void ThrowArgumentException(string? message)
     {
         throw new ArgumentException(message);
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowArgumentException(string? message, string? paramName)
+    {
+        throw new ArgumentException(message, paramName);
     }
 
     [DoesNotReturn]

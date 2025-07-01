@@ -15,9 +15,9 @@ public sealed partial class EcsWorld
         return true;
     }
 
-    public bool Has(EcsHandle entity, EcsHandle identifier, EcsHandle target)
+    public bool Has(EcsHandle entity, EcsHandle kind, EcsHandle target)
     {
-        return GetEntityIndex(entity).Archetype.Has(GetHandleToPair(identifier, target));
+        return GetEntityIndex(entity).Archetype.Has(GetHandleToPair(kind, target));
     }
 
     public bool Has<TKind>(EcsHandle entity, EcsHandle target) where TKind : struct
@@ -34,16 +34,16 @@ public sealed partial class EcsWorld
 
     public ref T GetRef<T>(EcsHandle entity) where T : struct
     {
-        ref var entityIndex = ref GetEntityIndex(entity);
         Debug.Assert(Has<T>(entity));
+        ref var entityIndex = ref GetEntityIndex(entity);
         int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
         return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType<T>().Id);
     }
 
     public ref T GetRef<T>(EcsHandle entity, EcsHandle target) where T : struct
     {
-        ref var entityIndex = ref GetEntityIndex(entity);
         Debug.Assert(Has<T>(entity, target));
+        ref var entityIndex = ref GetEntityIndex(entity);
         int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
         return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToPair(GetHandleToType<T>(), target).Id);
     }
@@ -112,9 +112,9 @@ public sealed partial class EcsWorld
         AddRelation(entity, kindHandle, target);
     }
 
-    public void AddRelation(EcsHandle entity, EcsHandle identifier, EcsHandle target)
+    public void AddRelation(EcsHandle entity, EcsHandle kind, EcsHandle target)
     {
-        var componentHandle = GetHandleToPair(identifier, target);
+        var componentHandle = GetHandleToPair(kind, target);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeAdd(src, componentHandle);
@@ -143,9 +143,9 @@ public sealed partial class EcsWorld
         RemoveRelation(entity, kindHandle, target);
     }
 
-    public void RemoveRelation(EcsHandle entity, EcsHandle identifier, EcsHandle target)
+    public void RemoveRelation(EcsHandle entity, EcsHandle kind, EcsHandle target)
     {
-        var componentHandle = GetHandleToPair(identifier, target);
+        var componentHandle = GetHandleToPair(kind, target);
 
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeRemove(src, componentHandle);

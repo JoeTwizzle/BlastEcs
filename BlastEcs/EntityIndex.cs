@@ -1,4 +1,4 @@
-﻿namespace BlastEcs;
+namespace BlastEcs;
 
 struct EntityIndex
 {

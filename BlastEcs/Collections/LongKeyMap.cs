@@ -66,26 +66,28 @@ public sealed class LongKeyMap<TValue>
         return false;
     }
 
-    public ref TValue GetValueRefOrAddDefault(ulong key, out bool existed)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetValueRefOrAddDefault(ulong key, out bool exists)
     {
         int i = FindEntry(key);
         if (i < 0)
         {
-            existed = false;
+            exists = false;
             i = Insert(key, default);
         }
         else
         {
-            existed = true;
+            exists = true;
         }
         return ref _entries[i].Value!;
     }
 
-    public ref TValue GetValueRefOrNullRef(ulong key, out bool existed)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetValueRefOrNullRef(ulong key, out bool exists)
     {
         int i = FindEntry(key);
-        existed = i >= 0;
-        if (existed)
+        exists = i >= 0;
+        if (exists)
         {
             return ref _entries[i].Value!;
         }
@@ -185,6 +187,7 @@ public sealed class LongKeyMap<TValue>
         _entries = newEntries;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int FindEntry(ulong key)
     {
         for (int i = _buckets[key % (ulong)_buckets.Length]; i >= 0; i = _entries[i].Next)

@@ -1,23 +1,24 @@
 using BlastEcs.Builtin;
 using BlastEcs.Helpers;
+using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
-    readonly Dictionary<RuntimeTypeHandle, EcsHandle> _typeRegistry;
+    private readonly Dictionary<RuntimeTypeHandle, EcsHandle> _typeRegistry;
 
-    private bool IsComponent(EcsHandle entity)
+    private bool HandleIsComponent(EcsHandle entity)
     {
         return GetEntityIndex(entity).Archetype.Has(_componentHandle);
     }
 
-    private static bool IsTag(Type type)
+    private static bool TypeIsTag(Type type)
     {
         return typeof(ITag).IsAssignableFrom(type);
     }
 
-    private static bool IsTagRelation(Type type)
+    private static bool TypeIsTagRelation(Type type)
     {
         return typeof(ITagRelation).IsAssignableFrom(type);
     }
@@ -27,11 +28,11 @@ public sealed partial class EcsWorld
         EcsHandle markerEntity;
         byte flags = 0;
         var type = Type.GetTypeFromHandle(typeHandle)!;
-        if (IsTagRelation(type))
+        if (TypeIsTagRelation(type))
         {
             flags |= EntityFlags.IsTagRelation;
         }
-        if (IsTag(type))
+        if (TypeIsTag(type))
         {
             markerEntity = CreateEntity(_entityArchetype, flags);
         }
@@ -45,7 +46,7 @@ public sealed partial class EcsWorld
         return markerEntity;
     }
 
-    //TODO
+    //TODO: Test that this works
     private void RemoveHandle(RuntimeTypeHandle type)
     {
         var entity = _typeRegistry[type];
@@ -76,11 +77,13 @@ public sealed partial class EcsWorld
         return CreateHandle(type);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public EcsHandle GetHandleToType<T>() where T : struct
     {
         return GetHandleToType(typeof(T).TypeHandle);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public EcsHandle GetHandleToInstantiableType<T>() where T : struct
     {
         if (typeof(T) == typeof(Any))
@@ -90,5 +93,4 @@ public sealed partial class EcsWorld
 
         return GetHandleToType<T>();
     }
-    //TODO: Remove handles
 }

@@ -8,8 +8,8 @@ public sealed partial class EcsWorld
 {
     private int tableCount;
 
-    readonly GrowList<Table> _tables;
-    readonly TypeCollectionMap<int> _tableMap;
+    private readonly GrowList<Table> _tables;
+    private readonly TypeCollectionMap<int> _tableMap;
 
     private Table CreateTable(TypeCollectionKey key)
     {
@@ -42,7 +42,7 @@ public sealed partial class EcsWorld
         Span<ulong> handles = components.Length <= StackallocCount ? stackalloc ulong[StackallocCount] : stackalloc ulong[components.Length];
         for (int i = 0; i < components.Length; i++)
         {
-            if (IsComponent(components[i]))
+            if (HandleIsComponent(components[i]))
             {
                 handles[count++] = components[i].Id;
             }

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace BlastEcs.Collections;
 
 public sealed class FastMap<T>
@@ -13,6 +15,7 @@ public sealed class FastMap<T>
         SlowRange = new LongKeyMap<T>();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref T GetOrCreateRefAt(ulong index)
     {
         if (index < FastRange)

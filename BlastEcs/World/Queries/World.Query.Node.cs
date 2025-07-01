@@ -66,7 +66,7 @@ public sealed partial class EcsWorld
                 var validSet = new BitMask();
                 if (_sources[i].WithKey.Types.Length == 0 && _sources[i].WithoutKey.Types.Length == 0)
                 {
-                    validSet.OrBits(_world._archetypes.OccupancyMask);
+                    validSet.SetRange(0, _world._archetypes.Count);
                 }
                 _world.GetArchetypesWith(_sources[i].WithKey, validSet, true);
                 _world.FilterArchetypesWithout(_sources[i].WithoutKey, validSet);
@@ -119,7 +119,7 @@ public sealed partial class EcsWorld
                     rem ^= rem & -rem;
 
                     _state.ActiveMembers[sourceId] = archetypeId;
-                    var archetype = _world._archetypes[archetypeId];
+                    var archetype = _world._archetypes[(uint)archetypeId];
 
                     for (int j = 0; j < source.ComplexTerms.Length; j++)
                     {

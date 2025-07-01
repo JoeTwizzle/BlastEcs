@@ -12,15 +12,15 @@ public sealed class Edges<T> where T : class
         public T? Remove;
     }
 
-    private readonly TypeCollectionMap<Edge> map;
+    private readonly TypeCollectionMap<Edge> _edgeMap;
     public Edges()
     {
-        map = new TypeCollectionMap<Edge>();
+        _edgeMap = new TypeCollectionMap<Edge>();
     }
 
     internal void AddEdgeAdd(TypeCollectionKey key, T item)
     {
-        ref var edge = ref map.GetValueRefOrAddDefault(key, out var exists);
+        ref var edge = ref _edgeMap.GetValueRefOrAddDefault(key, out var exists);
         if (exists)
         {
             if (edge.Add != null)
@@ -33,7 +33,7 @@ public sealed class Edges<T> where T : class
 
     internal void AddEdgeRemove(TypeCollectionKey key, T item)
     {
-        ref var edge = ref map.GetValueRefOrAddDefault(key, out var exists);
+        ref var edge = ref _edgeMap.GetValueRefOrAddDefault(key, out var exists);
         if (exists)
         {
             if (edge.Remove != null)
@@ -46,7 +46,7 @@ public sealed class Edges<T> where T : class
 
     internal void RemoveEdgeAdd(TypeCollectionKeyNoAlloc key)
     {
-        ref var edge = ref map.GetValueRefOrNullRef(key, out var exists);
+        ref var edge = ref _edgeMap.GetValueRefOrNullRef(key, out var exists);
         if (exists)
         {
             edge.Add = default;
@@ -55,7 +55,7 @@ public sealed class Edges<T> where T : class
 
     internal void RemoveEdgeRemove(TypeCollectionKeyNoAlloc key)
     {
-        ref var edge = ref map.GetValueRefOrNullRef(key, out var exists);
+        ref var edge = ref _edgeMap.GetValueRefOrNullRef(key, out var exists);
         if (exists)
         {
             edge.Remove = default;
@@ -64,7 +64,7 @@ public sealed class Edges<T> where T : class
 
     public bool TryGetEdgeAdd(TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
     {
-        if (map.TryGetValue(key, out var edge))
+        if (_edgeMap.TryGetValue(key, out var edge))
         {
             item = edge.Add;
             return item != null;
@@ -75,7 +75,7 @@ public sealed class Edges<T> where T : class
 
     public bool TryGetEdgeRemove(TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
     {
-        if (map.TryGetValue(key, out var edge))
+        if (_edgeMap.TryGetValue(key, out var edge))
         {
             item = edge.Remove;
             return item != null;
@@ -86,24 +86,24 @@ public sealed class Edges<T> where T : class
 
     public T GetEdgeAdd(TypeCollectionKeyNoAlloc key)
     {
-        return map[key].Add!;
+        return _edgeMap[key].Add!;
     }
 
     public T GetEdgeRemove(TypeCollectionKeyNoAlloc key)
     {
-        return map[key].Remove!;
+        return _edgeMap[key].Remove!;
     }
 
     public Edge this[TypeCollectionKeyNoAlloc key]
     {
         get
         {
-            return map[key];
+            return _edgeMap[key];
         }
     }
 
     public TypeCollectionMap<Edge>.TypeCollectionMapEnumerator GetEnumerator()
     {
-        return map.GetEnumerator();
+        return _edgeMap.GetEnumerator();
     }
 }

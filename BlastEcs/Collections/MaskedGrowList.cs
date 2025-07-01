@@ -47,6 +47,19 @@ public sealed class MaskedGrowList<T>
         Array.Resize(ref _mask, (newSize + 63) / 64);
     }
 
+    public void RemoveAt(int index)
+    {
+        if (_count == 0)
+        {
+            ThrowHelper.ThrowInvalidOperationException();
+        }
+        _count--;
+        _array[index] = _array[_count];
+        int maskIndex = _count / 64;
+        int remainder = _count & 5;
+        _mask[maskIndex] &= ~(1ul << remainder);
+    }
+
     public void RemoveAtDense(int index)
     {
         if (_count == 0)

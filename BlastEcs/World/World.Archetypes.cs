@@ -2,6 +2,7 @@ using BlastEcs.Builtin;
 using BlastEcs.Collections;
 using BlastEcs.Utils;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
 
@@ -13,10 +14,20 @@ public sealed partial class EcsWorld
     /// Maps a type key to an archetype id
     /// </summary>
     private readonly TypeCollectionMap<int> _archetypeMap;
-    private readonly MaskedGrowList<Archetype> _archetypes;
+    private readonly SparseMap<Archetype> _archetypes;
     private readonly GrowList<int> _deadArchetypes;
+    /// <summary>
+    /// For every entity which is used as a type in an Archetype
+    /// Write id of the archetype that contains it
+    /// Store ArchetypeId mapped to indices
+    /// </summary>
     private readonly LongKeyMap<ComponentIndexInfo> _componentIndex;
-    private readonly Dictionary<uint, PooledList<uint>> _pairTypeMap;
+    /// <summary>
+    /// For every pair which is used as a type in an Archetype
+    /// Write an entry for Kind, containing Target
+    /// Write an entry for Target, containing Kind
+    /// </summary>
+    private readonly Dictionary<uint, SparseSet> _pairTypeMap;
     private readonly Archetype _entityArchetype;
     private readonly Archetype _componentArchetype;
 
@@ -33,20 +44,18 @@ public sealed partial class EcsWorld
 
     private Archetype CreateArchetype(TypeCollectionKey key)
     {
-
         int id = GetArchetypeId();
         _archetypeMap.Add(key, id);
 
         var arch = new Archetype(id, GetTable(key), key);
         Debug.Assert(_archetypes.Count == id);
-        _archetypes.Add(arch);
+        _archetypes.Add((uint)arch.Id, arch);
 
         //Register presence of components
         var types = key.Types;
         for (int i = 0; i < types.Length; i++)
         {
             var handle = new EcsHandle(types[i]);
-            //The type is a pair
             ref var info = ref _componentIndex.GetValueRefOrAddDefault(handle.Id, out var exists);
             if (!exists)
             {
@@ -56,13 +65,15 @@ public sealed partial class EcsWorld
             info.ContainingArchetypes.SetBit(id);
             if (handle.IsPair)
             {
-                ref PooledList<uint> list = ref _pairTypeMap.GetRefOrAddDefault(handle.Entity, out exists);
+                //Add refrence for Kind
+                ref SparseSet list = ref _pairTypeMap.GetRefOrAddDefault(handle.Entity, out exists);
                 if (!exists)
                 {
                     list = new();
                 }
                 list.Add(handle.Target);
 
+                //Add refrence for Target
                 list = ref _pairTypeMap.GetRefOrAddDefault(handle.Target, out exists);
                 if (!exists)
                 {
@@ -70,16 +81,18 @@ public sealed partial class EcsWorld
                 }
                 list.Add(handle.Entity);
 
-                var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteTarget.Id, out exists);
+                //Add refrence for indefinite Kind
+                var indefiniteKind = GetRelationWithIndefiniteKind(handle);
+                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteKind.Id, out exists);
                 if (!exists)
                 {
                     info = new();
                 }
                 info.ContainingArchetypes.SetBit(id);
 
-                var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteKind.Id, out exists);
+                //Add refrence for indefinite Target
+                var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
+                info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteTarget.Id, out exists);
                 if (!exists)
                 {
                     info = new();
@@ -109,7 +122,7 @@ public sealed partial class EcsWorld
     {
         if (_archetypeMap.TryGetValue(key, out var archetypeId))
         {
-            return _archetypes[archetypeId];
+            return _archetypes[(uint)archetypeId];
         }
         return CreateArchetype(new(key));
     }
@@ -253,14 +266,16 @@ public sealed partial class EcsWorld
             return newArch;
         }
         var oldTypes = currentArchetype.Key.Types;
-        int skipIndex = oldTypes.IndexOf(removedId);
         Span<ulong> newTypes = stackalloc ulong[oldTypes.Length - 1];
+        if (oldTypes.Length > 0)
+        {
+            int skipIndex = oldTypes.IndexOf(removedId);
 
-        Span<ulong> destA = newTypes.Slice(0, skipIndex);
-        Span<ulong> destb = newTypes.Slice(skipIndex, oldTypes.Length - (skipIndex + 1));
-        oldTypes.Slice(0, skipIndex).CopyTo(destA);
-        oldTypes.Slice(skipIndex + 1).CopyTo(destb);
-
+            Span<ulong> destA = newTypes.Slice(0, skipIndex);
+            Span<ulong> destb = newTypes.Slice(skipIndex, oldTypes.Length - (skipIndex + 1));
+            oldTypes.Slice(0, skipIndex).CopyTo(destA);
+            oldTypes.Slice(skipIndex + 1).CopyTo(destb);
+        }
         newArch = GetArchetype(new(newTypes));
         var key2 = new TypeCollectionKey(key);
         currentArchetype.Edges.AddEdgeRemove(key2, newArch);
@@ -315,13 +330,58 @@ public sealed partial class EcsWorld
 
     private void DestroyArchetype(Archetype arch)
     {
+        _archetypeMap.Remove(arch.Key);
+        _archetypes.Remove((uint)arch.Id);
         _deadArchetypes.Add(arch.Id);
-        _archetypes[arch.Id] = null!;
         foreach (var keyValue in arch.Edges)
         {
             keyValue.Value.Remove?.Edges.RemoveEdgeAdd(keyValue.Key);
             keyValue.Value.Add?.Edges.RemoveEdgeRemove(keyValue.Key);
         }
-        _archetypeMap.Remove(arch.Key);
+        var types = arch.Key.Types;
+        for (int i = 0; i < types.Length; i++)
+        {
+            var handle = new EcsHandle(types[i]);
+            //The type is a pair
+            ref var info = ref _componentIndex.GetValueRefOrNullRef(handle.Id, out bool exists);
+            if (exists)
+            {
+                info.ArchetypeMap.Remove(arch.Id);
+                info.ContainingArchetypes.ClearBit(arch.Id);
+            }
+
+            if (!handle.IsPair)
+            {
+                continue;
+            }
+
+            ref SparseSet set = ref _pairTypeMap.GetRefOrNullRef(handle.Entity);
+            if (!Unsafe.IsNullRef(ref set))
+            {
+                set.Remove(handle.Target);
+                _pairTypeMap.Remove(handle.Entity);
+            }
+
+            set = ref _pairTypeMap.GetRefOrNullRef(handle.Target);
+            if (!Unsafe.IsNullRef(ref set))
+            {
+                set.Remove(handle.Entity);
+                _pairTypeMap.Remove(handle.Target);
+            }
+
+            var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
+            info = ref _componentIndex.GetValueRefOrNullRef(indefiniteTarget.Id, out exists);
+            if (exists)
+            {
+                info.ContainingArchetypes.ClearBit(arch.Id);
+            }
+
+            var indefiniteKind = GetRelationWithIndefiniteKind(handle);
+            info = ref _componentIndex.GetValueRefOrNullRef(indefiniteKind.Id, out exists);
+            if (exists)
+            {
+                info.ContainingArchetypes.ClearBit(arch.Id);
+            }
+        }
     }
 }

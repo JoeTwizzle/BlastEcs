@@ -1,33 +1,40 @@
 using BlastEcs.Helpers;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace BlastEcs.Collections;
 
-public sealed class SparseSet
+public sealed class SparseMap<T>
 {
-    private int[] _sparse;   // Maps key to index in _dense; -1 = not present
-    private uint[] _dense;    // Contains keys in insertion order
+    private int[] _sparse;   // Maps key to index in _dense/_values; -1 = not present
+    private uint[] _dense;    // Contains keys in insertion order (parallel to _values)
+    private T[] _values;     // Contains values (parallel to _dense)
     private int _count;      // Number of elements
+    public int Count => _count;
 
-    public SparseSet(int initialSparseCapacity = 16, int initialDenseCapacity = 4)
+    public SparseMap(int initialSparseCapacity = 16, int initialValuesCapacity = 4)
     {
         _sparse = new int[initialSparseCapacity];
         Array.Fill(_sparse, -1);
-        _dense = new uint[initialDenseCapacity];
+        _dense = new uint[initialValuesCapacity];
+        _values = new T[initialValuesCapacity];
         _count = 0;
     }
 
-    public int Count => _count;
-
-    public void Add(uint key)
+    public void Add(uint key, T value)
     {
         EnsureSparseCapacity(key + 1);
         ref int index = ref _sparse[key];
         if (index != -1)
-            return;  // Key already exists
+        {
+            _values[index] = value;
+            return;
+        }
 
         EnsureDenseCapacity();
         index = _count;
         _dense[_count] = key;
+        _values[_count] = value;
         _count++;
     }
 
@@ -57,6 +64,7 @@ public sealed class SparseSet
         uint removedKey = _dense[index];
 
         _dense[index] = lastKey;
+        _values[index] = _values[_count - 1];
 
         // Update sparse for swapped key
         _sparse[lastKey] = index;
@@ -68,9 +76,62 @@ public sealed class SparseSet
     public bool Contains(uint key) =>
         key < (uint)_sparse.Length && _sparse[key] != -1;
 
-    public uint GetKeyAt(int index) => _dense[index];
+    public bool TryGetValue(uint key, out T value)
+    {
+        if (key < (uint)_sparse.Length)
+        {
+            int index = _sparse[key];
+            if (index != -1)
+            {
+                value = _values[index];
+                return true;
+            }
+        }
+        value = default!;
+        return false;
+    }
 
-    public ReadOnlySpan<uint> GetDense() => new ReadOnlySpan<uint>(_dense, 0, _count);
+    public ref T this[uint key]
+    {
+        get
+        {
+            if (key >= (uint)_sparse.Length)
+            {
+                ThrowKeyNotFound();
+            }
+
+            ref int index = ref _sparse[key];
+            if (index == -1)
+                ThrowKeyNotFound();
+            return ref _values[index];
+        }
+    }
+
+    public ref T GetValueOrAddDefault(uint key)
+    {
+        EnsureSparseCapacity(key + 1);
+        ref int index = ref _sparse[key];
+        if (index == -1)
+        {
+            EnsureDenseCapacity();
+            index = _count;
+            _dense[_count] = key;
+            _values[_count] = default!;
+            _count++;
+        }
+        return ref _values[index];
+    }
+
+    public ref T GetValueOrNullRef(uint key)
+    {
+        if (key < (uint)_sparse.Length)
+        {
+            int index = _sparse[key];
+            if (index != -1)
+                return ref _values[index];
+        }
+        return ref Unsafe.NullRef<T>();
+    }
 
     private void EnsureSparseCapacity(uint requiredCapacity)
     {
@@ -108,5 +169,9 @@ public sealed class SparseSet
 
         int newCapacity = _dense.Length == 0 ? 4 : _dense.Length * 2;
         Array.Resize(ref _dense, newCapacity);
+        Array.Resize(ref _values, newCapacity);
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowKeyNotFound() => throw new KeyNotFoundException();
 }

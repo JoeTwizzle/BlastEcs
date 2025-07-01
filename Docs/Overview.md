@@ -41,10 +41,12 @@ An identifier is created **for every type** known to the ECS. <br/>
 **If a struct is not a tag**, then a component of type **EcsComponent** is added to the identifier. <br/>
 The presence of this component indicates, that the **type is associated with a struct storing data**.
 
-New EcsHandles are created when an unregistered struct is **added to, or removed from** an Entity. <br/>
-New EcsHandles are created when an unregistered struct is **accessed from, or checked on** an Entity. <br/>
-New EcsHandles are created when an unregistered Pair is **added to, or removed from** an Entity. <br/>
-New EcsHandles are created **for each unregistered constituent type** in a Pair.<br/>
+#### When new EcsHandles are created:
+
+When an unregistered struct is **added to, or removed from** an Entity. <br/>
+When an unregistered struct is **accessed from, or checked on** an Entity. <br/>
+When an unregistered Pair is **added to, or removed from** an Entity. <br/>
+**For each unregistered constituent type** in a Pair.<br/>
 
 **FIXME: Should removing not create a new handle?**
 
@@ -91,10 +93,17 @@ If an EcsHandle ``B`` is attached to another EcsHandle ``A``, either by itself, 
 
 ## Constraints (WIP)
 
-A constraint may be applied to a specific EcsHandle. 
+A constraint may be applied to a specific EcsHandle ``A``. 
 
 Ideas for constraints: <br/>
-``Requires(EcsHandle)``: Requires the presence of another EcsHandle. Errors if not already present.<br/>
-``Associated(EcsHandle)``: Additionally adds another EcsHandle when added, if not already present.<br/>
-``Associated(EcsHandle)``: Additionally adds another EcsHandle when added, if not present.<br/>
-``Associated(EcsHandle)``: Additionally adds another EcsHandle when added, if not present.<br/>
+
+When to apply the constraint:<br/>
+``OnCreate``<br/>
+``OnAdd``<br/>
+``OnRemove``<br/>
+``OnDestroy``<br/>
+
+Action to perform: <br/>
+``AddComponent(EcsHandle)``<br/>
+``RemoveComponent(EcsHandle)``<br/>
+``RequireComponent(EcsHandle)``<br/>

@@ -1,7 +1,9 @@
 using BlastEcs.Collections;
 using BlastEcs.Helpers;
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
@@ -19,7 +21,6 @@ public sealed class Table : IEquatable<Table>
     internal LongKeyMap<int> TypeIndices => _typeIndices;
 
     private readonly int _id;
-    private readonly Type[] _componentTypes;
     private readonly TypeCollectionKey _key;
     private readonly Array[] _components;
     private readonly LongKeyMap<int> _typeIndices;
@@ -30,7 +31,6 @@ public sealed class Table : IEquatable<Table>
     internal Table(int id, Type[] componentTypes, TypeCollectionKey key, int initialCapacity = 4)
     {
         _id = id;
-        _componentTypes = componentTypes;
         _key = key;
         _components = new Array[componentTypes.Length];
         _capacity = initialCapacity;
@@ -113,7 +113,7 @@ public sealed class Table : IEquatable<Table>
     {
         if (_typeIndices.TryGetValue(handle, out int i))
         {
-            return ref ((T[])_components[i])[index];
+            return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_components[i])), index);
         }
         ThrowHelper.ThrowArgumentException();
         return ref Unsafe.NullRef<T>();
@@ -126,7 +126,7 @@ public sealed class Table : IEquatable<Table>
 
     internal ref T GetRawRefAt<T>(int entityIndex, int componentIndex) where T : struct
     {
-        return ref ((T[])_components[componentIndex])[entityIndex];
+        return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_components[componentIndex])), entityIndex);
     }
 
     private void Resize()
@@ -134,7 +134,7 @@ public sealed class Table : IEquatable<Table>
         _capacity *= 2;
         for (int i = 0; i < _components.Length; i++)
         {
-            var newArr = Array.CreateInstance(_componentTypes[i], _capacity);
+            var newArr = Array.CreateInstanceFromArrayType(_components[i].GetType(), _capacity);
             _components[i].CopyTo(newArr, 0);
             _components[i] = newArr;
         }

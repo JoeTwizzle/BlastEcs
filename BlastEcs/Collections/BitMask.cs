@@ -72,12 +72,12 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         }
     }
 
-    public void SetRange(int index, int count)
+    public void SetRange(int startBitIndex, int bitCount)
     {
-        int start = index;
-        int end = start + count;
+        int start = startBitIndex;
+        int end = start + bitCount;
 
-        int startByteIndex = index >>> 6;
+        int startByteIndex = startBitIndex >>> 6;
         int endByteIndex = end >>> 6;
 
         ResizeIfNeeded(endByteIndex);
@@ -344,6 +344,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
 
     public void Dispose()
     {
+        _bits.AsSpan().Clear();
         ArrayPool<ulong>.Shared.Return(_bits);
     }
 
