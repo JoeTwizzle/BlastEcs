@@ -24,7 +24,7 @@ public sealed class TypeCollectionMap<TValue>
     private int _freeCount;
     private const int StartOfFreeList = -3;
 
-    public TypeCollectionMap(int capacity = 16)
+    public TypeCollectionMap(int capacity = 1)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
         int size = HashHelpers.GetPrime(capacity);

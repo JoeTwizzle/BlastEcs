@@ -96,15 +96,22 @@ public sealed class SparseSet
 
     private static int DoubledCapacity(uint currentLength)
     {
-        return (currentLength <= int.MaxValue / 2)
-            ? (int)currentLength * 2
-            : int.MaxValue;
+        if (currentLength <= int.MaxValue / 2)
+        {
+            return (int)currentLength * 2;
+        }
+        else
+        {
+            return int.MaxValue;
+        }
     }
 
     private void EnsureDenseCapacity()
     {
         if (_count < _dense.Length)
+        {
             return;
+        }
 
         int newCapacity = _dense.Length == 0 ? 4 : _dense.Length * 2;
         Array.Resize(ref _dense, newCapacity);

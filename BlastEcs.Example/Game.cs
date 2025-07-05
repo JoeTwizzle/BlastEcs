@@ -15,15 +15,14 @@ sealed class Game
 
     public void Run()
     {
-        var world = new EcsWorld();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 10000000; i++)
         {
-            var e = world.CreateEntity<Position>();
-            var kind = world.CreateEntity<Position>();
-            var target = world.CreateEntity<Position>();
+            var e = world.CreateEntity();
+            var kind = world.CreateEntity();
+            var target = world.CreateEntity();
             world.AddRelation(e, kind, target);
-            world.DestroyEntity(kind);
-            world.DestroyEntity(target);
+            //world.DestroyEntity(kind);
+            //world.DestroyEntity(target);
         }
     }
 

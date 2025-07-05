@@ -1,3 +1,4 @@
+using System;
 using System.Buffers;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
@@ -129,6 +130,18 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         _bits[bitIndex] ^= (1uL << remainder);
     }
 
+    public void OrBits(QuickMask mask)
+    {
+        ResizeIfNeeded(QuickMask.QuickRangeLength);
+        TensorPrimitives.BitwiseOr(Bits, mask.QuickBits, _bits);
+        foreach (var index in mask.Mask)
+        {
+            int bitIndex = index >>> 6;
+            ResizeIfNeeded(bitIndex);
+            int remainder = index & (63);
+            _bits[bitIndex] |= (1uL << remainder);
+        }
+    }
 
     public void OrBits(BitMask mask)
     {
@@ -154,6 +167,42 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         }
     }
 
+    public void AndBits(QuickMask mask)
+    {
+        // Process quick range bits
+        int quickLength = Math.Min(_bits.Length, QuickMask.QuickRangeLength);
+        TensorPrimitives.BitwiseAnd(
+            _bits.AsSpan(0, quickLength),
+            ((Span<ulong>)mask.QuickBits).Slice(0, quickLength),
+            _bits.AsSpan(0, quickLength)
+        );
+
+        // Process extended range bits
+        int extendedStart = QuickMask.QuickRangeLength;
+        int extendedEnd = _bits.Length;
+        if (extendedStart >= extendedEnd) return;
+
+        // Build mask for extended range
+        Span<ulong> extendedMask = stackalloc ulong[extendedEnd - extendedStart];
+        extendedMask.Clear();
+
+        foreach (var key in mask.Mask)
+        {
+            int chunkIndex = key >>> 6;
+            if (chunkIndex >= extendedStart && chunkIndex < extendedEnd)
+            {
+                int localIndex = chunkIndex - extendedStart;
+                int bit = key & 63;
+                extendedMask[localIndex] |= (1uL << bit);
+            }
+        }
+
+        // Apply extended mask
+        for (int i = extendedStart; i < extendedEnd; i++)
+        {
+            _bits[i] &= extendedMask[i - extendedStart];
+        }
+    }
 
     public void AndBits(BitMask mask)
     {
@@ -163,6 +212,31 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
     public void AndBits(ReadOnlySpan<ulong> mask)
     {
         TensorPrimitives.BitwiseAnd(Bits, mask, _bits);
+    }
+
+    public void ClearBits(QuickMask mask)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (i < _count)
+            {
+                _bits[i] &= ~mask.QuickBits[i];
+            }
+            else
+            {
+                break; 
+            }
+        }
+
+        foreach (int bitIndex in mask.Mask)
+        {
+            int wordIndex = bitIndex / 64;
+            if (wordIndex < _count)
+            {
+                int bitOffset = bitIndex % 64;
+                _bits[wordIndex] &= ~(1UL << bitOffset);
+            }
+        }
     }
 
     public void ClearBits(BitMask mask)

@@ -57,7 +57,7 @@ public sealed partial class EcsWorld
         entityIndex.Flags = flags;
         var entity = new EcsHandle(id, gen, _worldId, flags);
         var tableIndex = archetype.Table.Add();
-        entityIndex.ArchetypeIndex = archetype.AddEntity(entity, tableIndex);
+        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity, tableIndex);
         if (EntityEventsEnabled)
         {
             OnEntityCreated?.Invoke(entity);
@@ -72,17 +72,17 @@ public sealed partial class EcsWorld
         entityIndex.Archetype = archetype;
         entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         var tableIndex = archetype.Table.Add();
-        entityIndex.ArchetypeIndex = archetype.AddEntity(handle, tableIndex);
+        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle, tableIndex);
         return handle;
     }
 
     public void DestroyEntity(EcsHandle entity)
     {
-        RemoveRefrencesTo(entity);
+        //RemoveReferencesTo(entity);
         ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
-        var pair = arch.TableIndices[entityIndex.ArchetypeIndex];
-        arch.RemoveEntityAt(entityIndex.ArchetypeIndex);
+        var pair = arch.TableIndices[entityIndex.ArchetypeSlotIndex];
+        arch.RemoveEntityAt(entityIndex.ArchetypeSlotIndex);
         arch.Table.RemoveAt(pair.tableIndex);
         entityIndex.Generation = (short)-entityIndex.Generation;
 
@@ -97,55 +97,61 @@ public sealed partial class EcsWorld
         }
     }
 
-    private void RemoveRefrencesTo(EcsHandle handle)
+    //private void RemoveReferencesTo(EcsHandle handle)
+    //{
+    //    //Get archetypes that contain this entity
+    //    if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
+    //    {
+    //        RemoveComponentFromArchetypes(handle, compInfo.ContainingArchetypes);
+    //        _componentIndex.Remove(handle.Id);
+    //    }
+
+    //    //Are there any archetypes which have this component as part of a relationship?
+    //    if (handle.IsPair || !_pairTypeMap.TryGetValue(handle.Entity, out var types))
+    //    {
+    //        return;
+    //    }
+
+    //    foreach (var entityB in types)
+    //    {
+    //        //This entity is the Kind
+    //        var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(entityB));
+    //        GetArchetypesWith(pairA,,true)
+    //        if (_componentIndex.TryGetValue(pairA.Id, out compInfo))
+    //        {
+    //            RemoveComponentFromArchetypes(pairA, compInfo.ContainingArchetypes);
+    //            _componentIndex.Remove(pairA.Id);
+    //        }
+    //        //This entity is the Target
+    //        var pairB = GetHandleToPair(GetEntity(entityB), GetEntity(handle.Entity));
+    //        if (_componentIndex.TryGetValue(pairB.Id, out compInfo))
+    //        {
+    //            RemoveComponentFromArchetypes(pairB, compInfo.ContainingArchetypes);
+    //            _componentIndex.Remove(pairB.Id);
+    //        }
+    //        //This entity is the Kind
+    //        var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
+    //        if (_componentIndex.TryGetValue(indefiniteTarget.Id, out compInfo))
+    //        {
+    //            _componentIndex.Remove(indefiniteTarget.Id);
+    //        }
+    //        //This entity is the Target
+    //        var indefiniteKind = GetRelationWithIndefiniteKind(handle);
+    //        if (_componentIndex.TryGetValue(indefiniteKind.Id, out compInfo))
+    //        {
+    //            _componentIndex.Remove(indefiniteKind.Id);
+    //        }
+    //    }
+    //}
+
+    private void RemoveComponentFromArchetypes(EcsHandle entity, QuickMask archetypes)
     {
-        //Get archetypes that contain this entity
-        if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
+        foreach (var ids in archetypes)
         {
-            RemoveComponentFromArchetypes(handle, compInfo.ContainingArchetypes.Bits);
-            _componentIndex.Remove(handle.Id);
-            compInfo.Dispose();
-        }
-
-        //Are there any archetypes which have this component as part of a relationship?
-        if (handle.IsPair || !_pairTypeMap.TryGetValue(handle.Entity, out var types))
-        {
-            return;
-        }
-
-        var items = types.GetDense();
-        foreach (var entityB in items)
-        {
-            //This entity is the Kind
-            var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(entityB));
-            if (_componentIndex.TryGetValue(pairA.Id, out compInfo))
-            {
-                RemoveComponentFromArchetypes(pairA, compInfo.ContainingArchetypes.Bits);
-                _componentIndex.Remove(pairA.Id);
-                compInfo.Dispose();
-            }
-            //This entity is the Target
-            var pairB = GetHandleToPair(GetEntity(entityB), GetEntity(handle.Entity));
-            if (_componentIndex.TryGetValue(pairB.Id, out compInfo))
-            {
-                RemoveComponentFromArchetypes(pairB, compInfo.ContainingArchetypes.Bits);
-                _componentIndex.Remove(pairB.Id);
-                compInfo.Dispose();
-            }
-            //This entity is the Kind
-            var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-            if (_componentIndex.TryGetValue(indefiniteTarget.Id, out compInfo))
-            {
-                _componentIndex.Remove(indefiniteTarget.Id);
-                compInfo.Dispose();
-            }
-            //This entity is the Target
-            var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-            if (_componentIndex.TryGetValue(indefiniteKind.Id, out compInfo))
-            {
-                _componentIndex.Remove(indefiniteKind.Id);
-                compInfo.Dispose();
-            }
+            var oldArch = _archetypes[(uint)ids];
+            var newArch = GetArchetypeRemove(oldArch, entity);
+            MoveAllEntities(oldArch, newArch);
+            DestroyArchetype(oldArch);
         }
     }
 
@@ -167,7 +173,7 @@ public sealed partial class EcsWorld
         }
     }
     //TODO: Unused?
-    private void RemoveEntityFromArchetypes(EcsHandle entity, Dictionary<int, int> archetypes)
+    private void RemoveComponentFromArchetypes(EcsHandle entity, Dictionary<int, int> archetypes)
     {
         foreach (var ids in archetypes.Keys)
         {
@@ -179,7 +185,7 @@ public sealed partial class EcsWorld
         }
     }
     //TODO: Unused?
-    private void RemoveEntityFromArchetypes(EcsHandle entity, ReadOnlySpan<int> archetypes)
+    private void RemoveComponentFromArchetypes(EcsHandle entity, ReadOnlySpan<int> archetypes)
     {
         foreach (var ids in archetypes)
         {
@@ -234,7 +240,7 @@ public sealed partial class EcsWorld
     public EcsHandle GetHandleToPair(EcsHandle identifier, EcsHandle target)
     {
         var pair = new EcsHandle(identifier, target);
-        if (_entities.GetOrCreateRefAt(pair.Id).Generation > 0)
+        if (GetEntityIndex(pair).Generation > 0)
         {
             return pair;
         }

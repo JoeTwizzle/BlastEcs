@@ -13,18 +13,19 @@ public sealed partial class EcsWorld
     internal const int AnyId = 2;
     public EcsHandle AnyEntity { get; }
     internal readonly EcsHandle _componentHandle;
-    public EcsWorld()
+    public EcsWorld(int anticipatedEntityCount = 16384)
     {
         _worldId = s_worldCounter++;
-        _entities = new();
+        _entities = new((ulong)anticipatedEntityCount);
         _archetypes = new();
         _tables = new();
         _deadEntities = new();
         _archetypeMap = new();
         _tableMap = new();
+        _edges = new();
         _typeRegistry = [];
-        _pairTypeMap = new();
-        _componentIndex = new();
+        //_pairTypeMap = new();
+        //_componentIndex = new();
         _deadArchetypes = new();
         //Reserve first index for empty entity
         _emptyEntity = new EcsHandle(0, 0, _worldId);
@@ -46,7 +47,7 @@ public sealed partial class EcsWorld
 
         var arch = entityIndex.Archetype = _componentArchetype = CreateArchetype(key);
         var tableIndex = arch.Table.Add();
-        entityIndex.ArchetypeIndex = arch.AddEntity(componentEntity, tableIndex);
+        entityIndex.ArchetypeSlotIndex = arch.AddEntity(componentEntity, tableIndex);
 
         //Register "Any" Special type
         AnyEntity = GetHandleToType<Any>();
