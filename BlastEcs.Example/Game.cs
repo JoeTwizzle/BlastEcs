@@ -15,14 +15,14 @@ sealed class Game
 
     public void Run()
     {
-        for (int i = 0; i < 10000000; i++)
+        for (int i = 0; i < 10_000_000; i++)
         {
             var e = world.CreateEntity();
             var kind = world.CreateEntity();
             var target = world.CreateEntity();
             world.AddRelation(e, kind, target);
-            //world.DestroyEntity(kind);
-            //world.DestroyEntity(target);
+            world.DestroyEntity(kind);
+            world.DestroyEntity(target);
         }
     }
 

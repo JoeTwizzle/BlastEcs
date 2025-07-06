@@ -6,5 +6,5 @@ struct EntityIndex
     public byte Flags;
     public short Generation;
     public int ArchetypeSlotIndex;
-    //public int TableSlotIndex;
+    public int TableSlotIndex;
 }

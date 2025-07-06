@@ -1,6 +1,7 @@
 using BlastEcs.Helpers;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace BlastEcs.Collections;
@@ -32,114 +33,191 @@ namespace BlastEcs.Collections;
 //        return alternate.GetHashCode();
 //    }
 //}
-public sealed class Edges<T> where T : class
+
+struct Entry
 {
-    public struct Edge
+    public int Add;
+    public int Remove;
+}
+
+public sealed class TrieNode
+{
+    public readonly ulong Id;
+    readonly Dictionary<ulong, TrieNode> edges;
+    Dictionary<int, Entry>? _values;
+    public TrieNode(ulong id)
     {
-        public T? Add;
-        public T? Remove;
+        Id = id;
+        edges = [];
     }
 
-    private readonly Dictionary<IndexedTypeCollectionKey, Edge> _edgeMap;
-    public Edges()
+    private static ref Entry GetValueRefOrAddDefault(TrieNode root, ReadOnlySpan<ulong> sequence, int archId, out bool exists)
     {
-        _edgeMap = new(new IndexedTypeCollectionKeyComparer());
-    }
+        TrieNode currentNode = root;
+        int index = 0;
+        int length = sequence.Length;
 
-    internal void AddEdgeAdd(int id, TypeCollectionKey key, T item)
-    {
-        ref var edge = ref CollectionsMarshal.GetValueRefOrAddDefault(_edgeMap, new IndexedTypeCollectionKey(id, key), out var exists);
-        if (exists)
+        while (index < length)
         {
-            if (edge.Add != null)
+            ulong current = sequence[index];
+            Dictionary<ulong, TrieNode> edges = currentNode.edges;
+
+            if (edges.TryGetValue(current, out var next))
             {
-                ThrowHelper.ThrowArgumentException("Argument is already present");
+                currentNode = next;
             }
-        }
-        edge.Add = item;
-    }
-
-    internal void AddEdgeRemove(int id, TypeCollectionKey key, T item)
-    {
-        ref var edge = ref CollectionsMarshal.GetValueRefOrAddDefault(_edgeMap, new IndexedTypeCollectionKey(id, key), out var exists);
-        if (exists)
-        {
-            if (edge.Remove != null)
+            else
             {
-                ThrowHelper.ThrowArgumentException("Argument is already present");
+                break;
             }
+
+
+            index++;
         }
-        edge.Remove = item;
+
+        while (index < length)
+        {
+            ulong current = sequence[index];
+            var newNode = new TrieNode(current);
+            currentNode.edges.Add(current, newNode);
+            currentNode = newNode;
+            index++;
+        }
+
+        currentNode._values ??= new Dictionary<int, Entry>();
+        return ref CollectionsMarshal.GetValueRefOrAddDefault(currentNode._values, archId, out exists);
     }
 
-    internal void RemoveEdgeAdd(int id, TypeCollectionKeyNoAlloc key)
+    private static ref Entry GetValueRefOrNullRef(TrieNode root, ReadOnlySpan<ulong> sequence, int archId)
     {
-        var altKey = new IndexedTypeCollectionKeyNoAlloc(id, key);
-        var alternate = _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>();
-        if (alternate.ContainsKey(altKey))
+        TrieNode currentNode = root;
+        int index = 0;
+        int length = sequence.Length;
+
+        while (index < length)
         {
-            var val = alternate[altKey];
-            val.Add = null!;
-            alternate[altKey] = val;
+            ulong current = sequence[index];
+            Dictionary<ulong, TrieNode> edges = currentNode.edges;
+
+            if (edges.TryGetValue(current, out var next))
+            {
+                currentNode = next;
+            }
+            else
+            {
+                break;
+            }
+
+            index++;
         }
+
+        while (index < length)
+        {
+            ulong current = sequence[index];
+            var newNode = new TrieNode(current);
+            currentNode.edges.Add(current, newNode);
+            currentNode = newNode;
+            index++;
+        }
+
+        // Handle leaf node
+        if (currentNode._values == null)
+        {
+            return ref Unsafe.NullRef<Entry>();
+        }
+        return ref CollectionsMarshal.GetValueRefOrNullRef(currentNode._values, archId);
     }
 
-    internal void RemoveEdgeRemove(int id, TypeCollectionKeyNoAlloc key)
+    public void AddEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch, int destArch)
     {
-        var altKey = new IndexedTypeCollectionKeyNoAlloc(id, key);
-        var alternate = _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>();
-        if (alternate.ContainsKey(altKey))
-        {
-            var val = alternate[altKey];
-            val.Remove = null!;
-            alternate[altKey] = val;
-        }
+        ref var entry = ref GetValueRefOrAddDefault(this, sequence, srcArch, out var exists);
+        entry.Add = destArch;
+        entry = ref GetValueRefOrAddDefault(this, sequence, destArch, out exists);
+        entry.Remove = srcArch;
     }
 
-    public bool TryGetEdgeAdd(int id, TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
+    public void AddEdgeRemove(ReadOnlySpan<ulong> sequence, int srcArch, int destArch)
     {
-        var alternate = _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>();
-        if (alternate.TryGetValue(new IndexedTypeCollectionKeyNoAlloc(id, key), out var edge))
+        ref var entry = ref GetValueRefOrAddDefault(this, sequence, srcArch, out var exists);
+        entry.Remove = destArch;
+        entry = ref GetValueRefOrAddDefault(this, sequence, destArch, out exists);
+        entry.Add = srcArch;
+    }
+
+    public void RemoveEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch)
+    {
+        ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
+        if (!Unsafe.IsNullRef(ref entry))
         {
-            item = edge.Add;
-            return item != null;
+            var destArch = entry.Add;
+            entry.Add = 0;
+            entry = ref GetValueRefOrNullRef(this, sequence, destArch);
+            if (!Unsafe.IsNullRef(ref entry))
+            {
+                entry.Remove = 0;
+            }
+        }    
+    }
+
+    public void RemoveEdgeRemove(ReadOnlySpan<ulong> sequence, int srcArch)
+    {
+        ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
+        if (!Unsafe.IsNullRef(ref entry))
+        {
+            var destArch = entry.Remove;
+            entry.Remove = 0;
+            entry = ref GetValueRefOrNullRef(this, sequence, destArch);
+            if (!Unsafe.IsNullRef(ref entry))
+            {
+                entry.Add = 0;
+            }
+        }     
+    }
+
+    public bool TryGetEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch, out int destId)
+    {
+        ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
+        if (!Unsafe.IsNullRef(ref entry))
+        {
+            destId = entry.Add;
+            return destId != 0;
         }
-        item = null;
+        destId = 0;
         return false;
     }
 
-    public bool TryGetEdgeRemove(int id, TypeCollectionKeyNoAlloc key, [NotNullWhen(true)] out T? item)
+    public bool TryGetEdgeRemove(ReadOnlySpan<ulong> sequence, int srcArch, out int destId)
     {
-        var alternate = _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>();
-        if (alternate.TryGetValue(new IndexedTypeCollectionKeyNoAlloc(id, key), out var edge))
+        ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
+        if (!Unsafe.IsNullRef(ref entry))
         {
-            item = edge.Remove;
-            return item != null;
+            destId = entry.Remove;
+            return destId != 0;
         }
-        item = null;
+        destId = 0;
         return false;
-    }
-
-    public T GetEdgeAdd(int id, TypeCollectionKeyNoAlloc key)
-    {
-        return _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>()[new IndexedTypeCollectionKeyNoAlloc(id, key)].Add!;
-    }
-
-    public T GetEdgeRemove(int id, TypeCollectionKeyNoAlloc key)
-    {
-        return _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>()[new IndexedTypeCollectionKeyNoAlloc(id, key)].Remove!;
-    }
-
-    public Edge this[IndexedTypeCollectionKeyNoAlloc key]
-    {
-        get
-        {
-            return _edgeMap.GetAlternateLookup<IndexedTypeCollectionKeyNoAlloc>()[key];
-        }
-    }
-
-    public Dictionary<IndexedTypeCollectionKey, Edge>.Enumerator GetEnumerator()
-    {
-        return _edgeMap.GetEnumerator();
     }
 }
+
+//public sealed class Edges<T> where T : class
+//{
+//    public void DefineEdgeSrcAdd(TypeCollectionKeyNoAlloc edgeIdentifier, T src, T dest)
+//    {
+//        root.AddEdgeAdd()
+//    }
+
+//    public void DefineEdgeSrcRemove(TypeCollectionKeyNoAlloc edgeIdentifier, T src, T dest)
+//    {
+
+//    }
+
+//    public T? GetAdd(TypeCollectionKeyNoAlloc edgeIdentifier, T src)
+//    {
+
+//    }
+
+//    public T? GetRemove(TypeCollectionKeyNoAlloc edgeIdentifier, T src)
+//    {
+
+//    }
+//}

@@ -22,7 +22,7 @@ public sealed partial class EcsWorld
         _deadEntities = new();
         _archetypeMap = new();
         _tableMap = new();
-        _edges = new();
+        _edges = new(0);
         _typeRegistry = [];
         //_pairTypeMap = new();
         //_componentIndex = new();
@@ -46,8 +46,8 @@ public sealed partial class EcsWorld
         _tables[tableId] = table;
 
         var arch = entityIndex.Archetype = _componentArchetype = CreateArchetype(key);
-        var tableIndex = arch.Table.Add();
-        entityIndex.ArchetypeSlotIndex = arch.AddEntity(componentEntity, tableIndex);
+        entityIndex.TableSlotIndex = arch.Table.Add();
+        entityIndex.ArchetypeSlotIndex = arch.AddEntity(componentEntity);
 
         //Register "Any" Special type
         AnyEntity = GetHandleToType<Any>();

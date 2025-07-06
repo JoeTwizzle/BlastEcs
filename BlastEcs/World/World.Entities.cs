@@ -56,8 +56,8 @@ public sealed partial class EcsWorld
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         entityIndex.Flags = flags;
         var entity = new EcsHandle(id, gen, _worldId, flags);
-        var tableIndex = archetype.Table.Add();
-        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity, tableIndex);
+        entityIndex.TableSlotIndex = archetype.Table.Add();
+        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity);
         if (EntityEventsEnabled)
         {
             OnEntityCreated?.Invoke(entity);
@@ -71,8 +71,8 @@ public sealed partial class EcsWorld
         ref EntityIndex entityIndex = ref GetEntityIndex(handle);
         entityIndex.Archetype = archetype;
         entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        var tableIndex = archetype.Table.Add();
-        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle, tableIndex);
+        entityIndex.TableSlotIndex = archetype.Table.Add();
+        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle);
         return handle;
     }
 
@@ -81,9 +81,9 @@ public sealed partial class EcsWorld
         //RemoveReferencesTo(entity);
         ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
-        var pair = arch.TableIndices[entityIndex.ArchetypeSlotIndex];
+        var pair = arch.Entities[entityIndex.ArchetypeSlotIndex];
         arch.RemoveEntityAt(entityIndex.ArchetypeSlotIndex);
-        arch.Table.RemoveAt(pair.tableIndex);
+        arch.Table.RemoveAt(entityIndex.TableSlotIndex);
         entityIndex.Generation = (short)-entityIndex.Generation;
 
         //Recycle id if entity is not a pair
