@@ -41,7 +41,7 @@ internal class WorldTests
     [Test]
     public void WorldCreateManyTestComponentTest()
     {
-        var arch = world.GetArchetype<TestComponent>();
+        var arch = world.GetOrCreateArchetype<TestComponent>();
         for (var i = 0; i < 10000; i++)
         {
             var e = world.CreateEntity(arch);
@@ -63,7 +63,7 @@ internal class WorldTests
     [Test]
     public void WorldCreateManyTestTagTest()
     {
-        var arch = world.GetArchetype<TestTag>();
+        var arch = world.GetOrCreateArchetype<TestTag>();
         for (var i = 0; i < 10000; i++)
         {
             var e = world.CreateEntity(arch);

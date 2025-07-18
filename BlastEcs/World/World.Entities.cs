@@ -39,7 +39,7 @@ public sealed partial class EcsWorld
 
     public EcsHandle CreateEntity(TypeCollectionKeyNoAlloc key)
     {
-        return CreateEntity(GetArchetype(key));
+        return CreateEntity(GetOrCreateArchetype(key));
     }
 
     public EcsHandle CreateEntity(Archetype archetype)
@@ -82,8 +82,11 @@ public sealed partial class EcsWorld
         ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
         var pair = arch.Entities[entityIndex.ArchetypeSlotIndex];
+        //TODO: update entityIndex.ArchetypeSlotIndex of last
         arch.RemoveEntityAt(entityIndex.ArchetypeSlotIndex);
-        arch.Table.RemoveAt(entityIndex.TableSlotIndex);
+        //TODO: update entityIndex.TableSlotIndex of last
+        arch.Table.FillHoleAt(entityIndex.TableSlotIndex);
+
         entityIndex.Generation = (short)-entityIndex.Generation;
 
         //Recycle id if entity is not a pair

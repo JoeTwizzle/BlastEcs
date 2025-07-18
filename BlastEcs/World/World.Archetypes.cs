@@ -107,22 +107,17 @@ public sealed partial class EcsWorld
         return arch;
     }
 
-    public Archetype GetArchetype()
-    {
-        return GetArchetype(new([]));
-    }
-
     [Variadic(nameof(T0), VariadicCount)]
-    public Archetype GetArchetype<T0>() where T0 : struct
+    public Archetype GetOrCreateArchetype<T0>() where T0 : struct
     {
         // [Variadic: CopyLines()]
         var handle_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(handle)]
         var key = new TypeCollectionKeyNoAlloc([handle_T0]);
-        return GetArchetype(key);
+        return GetOrCreateArchetype(key);
     }
 
-    public Archetype GetArchetype(TypeCollectionKeyNoAlloc key)
+    public Archetype GetOrCreateArchetype(TypeCollectionKeyNoAlloc key)
     {
         if (_archetypeMap.TryGetValue(key, out var archetypeId))
         {
@@ -205,7 +200,7 @@ public sealed partial class EcsWorld
         var oldTypes = currentArchetype.Key.Types;
         // [Variadic: CopyArgs(addedId)]
         Span<ulong> newTypes = [.. oldTypes, addedId_T0];
-        var newArch = GetArchetype(new TypeCollectionKeyNoAlloc(newTypes));
+        var newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
         var key2 = new TypeCollectionKey(key);
         _edges.AddEdgeAdd(key2.Types, currentArchetype.Id, newArch.Id);
         return newArch;
@@ -246,7 +241,7 @@ public sealed partial class EcsWorld
                 newTypes[count++] = oldTypes[i];
             }
         }
-        var newArch = GetArchetype(new(newTypes));
+        var newArch = GetOrCreateArchetype(new(newTypes));
         var key2 = new TypeCollectionKey(key);
         _edges.AddEdgeRemove(key2.Types, currentArchetype.Id, newArch.Id);
         return newArch;
@@ -264,7 +259,7 @@ public sealed partial class EcsWorld
         var newTypes = new ulong[oldTypes.Length + 1];
         oldTypes.CopyTo(newTypes);
         newTypes[newTypes.Length - 1] = addedId;
-        var newArch = GetArchetype(new TypeCollectionKeyNoAlloc(newTypes));
+        var newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
         var key2 = new TypeCollectionKey(key);
         _edges.AddEdgeAdd(key2.Types, currentArchetype.Id, newArch.Id);
         return newArch;
@@ -290,7 +285,7 @@ public sealed partial class EcsWorld
             oldTypes.Slice(0, skipIndex).CopyTo(destA);
             oldTypes.Slice(skipIndex + 1).CopyTo(destb);
         }
-        var newArch = GetArchetype(new(newTypes));
+        var newArch = GetOrCreateArchetype(new(newTypes));
         var key2 = new TypeCollectionKey(key);
         _edges.AddEdgeRemove(key2.Types, currentArchetype.Id, newArch.Id);
         return newArch;
@@ -305,11 +300,13 @@ public sealed partial class EcsWorld
         {
             int destTableIndex = dest.Table.Add();
             src.Table.CopyComponents(index.TableSlotIndex, dest.Table, destTableIndex, 1);
-            src.Table.RemoveAt(index.TableSlotIndex);
+            src.Table.FillHoleAt(index.TableSlotIndex);
+            //TODO: Update index.TableSlotIndex of changed entity
             index.TableSlotIndex = destTableIndex;
             pair = entity;
         }
         src.RemoveEntityAt(archIndex);
+        //TODO: Update index.ArchetypeSlotIndex of changed entity
         archIndex = dest.AddEntity(pair);
         index.Archetype = dest;
         index.ArchetypeSlotIndex = archIndex;
@@ -327,6 +324,7 @@ public sealed partial class EcsWorld
                 int newArchIndex = dest.AddEntity(entities[i]);
                 ref var ent = ref GetEntityIndex(entities[i]);
                 ent.ArchetypeSlotIndex = newArchIndex + i;
+                ent.TableSlotIndex = destTableIndex + i;
                 ent.Archetype = dest;
             }
         }

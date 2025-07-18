@@ -33,11 +33,25 @@ namespace BlastEcs.Collections;
 //        return alternate.GetHashCode();
 //    }
 //}
-
+class MyClass
+{
+    //O(N) -> O(M)
+    Dictionary<int, Dictionary<TypeCollectionKey, (int, int)>> a;
+    //O(M) -> O(N)
+    Dictionary<ulong, Dictionary<int, (int, int)>> b;
+    //O(M + K) 
+    // ulong -> ulong -> ulong -> ... -> (int, int)
+    //Delta, 
+    LinkedList<Archetype> edges;
+    struct KeyId;
+    Dictionary<TypeCollectionKey, KeyId> keys;
+    Dictionary<KeyId, Dictionary<Archetype, Archetype>> Edges;
+    Dictionary<Archetype, List<KeyId>> SrcDestMap;
+}
 struct Entry
 {
-    public int Add;
-    public int Remove;
+    public int AddId;
+    public int RemoveId;
 }
 
 public sealed class TrieNode
@@ -131,17 +145,17 @@ public sealed class TrieNode
     public void AddEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch, int destArch)
     {
         ref var entry = ref GetValueRefOrAddDefault(this, sequence, srcArch, out var exists);
-        entry.Add = destArch;
+        entry.AddId = destArch;
         entry = ref GetValueRefOrAddDefault(this, sequence, destArch, out exists);
-        entry.Remove = srcArch;
+        entry.RemoveId = srcArch;
     }
 
     public void AddEdgeRemove(ReadOnlySpan<ulong> sequence, int srcArch, int destArch)
     {
         ref var entry = ref GetValueRefOrAddDefault(this, sequence, srcArch, out var exists);
-        entry.Remove = destArch;
+        entry.RemoveId = destArch;
         entry = ref GetValueRefOrAddDefault(this, sequence, destArch, out exists);
-        entry.Add = srcArch;
+        entry.AddId = srcArch;
     }
 
     public void RemoveEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch)
@@ -149,14 +163,14 @@ public sealed class TrieNode
         ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
         if (!Unsafe.IsNullRef(ref entry))
         {
-            var destArch = entry.Add;
-            entry.Add = 0;
+            var destArch = entry.AddId;
+            entry.AddId = 0;
             entry = ref GetValueRefOrNullRef(this, sequence, destArch);
             if (!Unsafe.IsNullRef(ref entry))
             {
-                entry.Remove = 0;
+                entry.RemoveId = 0;
             }
-        }    
+        }
     }
 
     public void RemoveEdgeRemove(ReadOnlySpan<ulong> sequence, int srcArch)
@@ -164,14 +178,14 @@ public sealed class TrieNode
         ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
         if (!Unsafe.IsNullRef(ref entry))
         {
-            var destArch = entry.Remove;
-            entry.Remove = 0;
+            var destArch = entry.RemoveId;
+            entry.RemoveId = 0;
             entry = ref GetValueRefOrNullRef(this, sequence, destArch);
             if (!Unsafe.IsNullRef(ref entry))
             {
-                entry.Add = 0;
+                entry.AddId = 0;
             }
-        }     
+        }
     }
 
     public bool TryGetEdgeAdd(ReadOnlySpan<ulong> sequence, int srcArch, out int destId)
@@ -179,7 +193,7 @@ public sealed class TrieNode
         ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
         if (!Unsafe.IsNullRef(ref entry))
         {
-            destId = entry.Add;
+            destId = entry.AddId;
             return destId != 0;
         }
         destId = 0;
@@ -191,7 +205,7 @@ public sealed class TrieNode
         ref var entry = ref GetValueRefOrNullRef(this, sequence, srcArch);
         if (!Unsafe.IsNullRef(ref entry))
         {
-            destId = entry.Remove;
+            destId = entry.RemoveId;
             return destId != 0;
         }
         destId = 0;
@@ -199,25 +213,3 @@ public sealed class TrieNode
     }
 }
 
-//public sealed class Edges<T> where T : class
-//{
-//    public void DefineEdgeSrcAdd(TypeCollectionKeyNoAlloc edgeIdentifier, T src, T dest)
-//    {
-//        root.AddEdgeAdd()
-//    }
-
-//    public void DefineEdgeSrcRemove(TypeCollectionKeyNoAlloc edgeIdentifier, T src, T dest)
-//    {
-
-//    }
-
-//    public T? GetAdd(TypeCollectionKeyNoAlloc edgeIdentifier, T src)
-//    {
-
-//    }
-
-//    public T? GetRemove(TypeCollectionKeyNoAlloc edgeIdentifier, T src)
-//    {
-
-//    }
-//}

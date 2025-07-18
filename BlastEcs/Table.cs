@@ -69,7 +69,7 @@ public sealed class Table : IEquatable<Table>
         return index;
     }
 
-    public void RemoveAt(int index)
+    public void FillHoleAt(int index)
     {
         _count--;
         for (int i = 0; i < _components.Length; i++)
