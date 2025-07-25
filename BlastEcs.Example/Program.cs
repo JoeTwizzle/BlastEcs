@@ -1,4 +1,4 @@
-﻿namespace BlastEcs.Example;
+namespace BlastEcs.Example;
 
 internal sealed class Program
 {

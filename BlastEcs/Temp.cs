@@ -1,4 +1,4 @@
-﻿//using BlastEcs.Collections;
+//using BlastEcs.Collections;
 
 //namespace BlastEcs;
 

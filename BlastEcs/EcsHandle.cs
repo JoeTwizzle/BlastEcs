@@ -47,6 +47,11 @@ public readonly partial struct EcsHandle
     /// </summary>
     public uint Entity => (uint)((_id >> 32) & 0xFFFFFFul);
     /// <summary>
+    /// 24 Bit EntityId.
+    /// If Pair flag is present then this represents the kind of relationship
+    /// </summary>
+    public uint Kind => (uint)((_id >> 32) & 0xFFFFFFul);
+    /// <summary>
     /// 8 Bit Flags.
     /// </summary>
     public byte Flags => (byte)((_id >> 56) & 0xFFul);
@@ -58,4 +63,15 @@ public readonly partial struct EcsHandle
     /// Whether the current handle forces the pair to act as a tag when used in a relation
     /// </summary>
     public bool IsTagRelation => (Flags & EntityFlags.IsTagRelation) != 0;
+
+    public const ulong EntityMask =     0x00FF_FFFF_0000_0000ul;
+    public const ulong TargetMask =     0x0000_0000_00FF_FFFFul;
+    public const ulong GenerationMask = 0x0000_0000_0000_FFFFul;
+    public const ulong WorldMask =      0x0000_0000_FF00_0000ul;
+    public const ulong FlagsMask =      0xFF00_0000_0000_0000ul;
+    public const ulong KindMask = EntityMask;
+    public const ulong MaxWorldEntityCount = 16777216;
+
 }
+
+

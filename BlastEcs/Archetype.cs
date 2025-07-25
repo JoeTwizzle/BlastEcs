@@ -12,12 +12,12 @@ public sealed class Archetype : IEquatable<Archetype>
     public Table Table => _table;
     public Edges<Archetype> Edges => _edges;
     //Index of an entity in a table's component arrays
-    public GrowList<(EcsHandle entity, int tableIndex)> TableIndices => _tableIndices;
+    public GrowList<EcsHandle> Entities => _entities;
 
     private readonly Edges<Archetype> _edges;
     private readonly Table _table;
     private readonly int _id;
-    private readonly GrowList<(EcsHandle entity, int tableIndex)> _tableIndices;
+    private readonly GrowList<EcsHandle> _entities;
 
     public Archetype(int id, Table table, TypeCollectionKey key)
     {
@@ -25,33 +25,26 @@ public sealed class Archetype : IEquatable<Archetype>
         _edges = new();
         _table = table;
         _id = id;
-        _tableIndices = new();
+        _entities = new();
     }
 
-    public int AddEntity(EcsHandle entity, int tableIndex)
+    public int AddEntity(EcsHandle entity)
     {
-        int index = _tableIndices.Count;
-        _tableIndices.Add((entity, tableIndex));
+        int index = _entities.Count;
+        _entities.Add(entity);
         return index;
     }
 
-    public int AddEntity((EcsHandle entity, int tableIndex) item)
+    public int AddEntities(ReadOnlySpan<EcsHandle> items)
     {
-        int index = _tableIndices.Count;
-        _tableIndices.Add(item);
-        return index;
-    }
-
-    public int AddEntities(ReadOnlySpan<(EcsHandle entity, int tableIndex)> items)
-    {
-        int index = _tableIndices.Count;
-        _tableIndices.AddRange(items);
+        int index = _entities.Count;
+        _entities.AddRange(items);
         return index;
     }
 
     public void RemoveEntityAt(int index)
     {
-        _tableIndices.RemoveAtDense(index);
+        _entities.RemoveAtDense(index);
     }
 
     public bool Has(EcsHandle componentType)

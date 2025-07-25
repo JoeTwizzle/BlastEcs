@@ -9,7 +9,7 @@ public static class SpanExtensions
     {
         var mask = Vector256.Create(maskValue);
 
-        int vectorSize = Vector256<ulong>.Count; // Number of ulongs that fit in a Vector256<ulong>
+        int vectorSize = Vector256<ulong>.Count;
         int i = 0;
 
         // Process vectors

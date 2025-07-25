@@ -1,8 +1,9 @@
+using BlastEcs;
 using BlastEcs.Collections;
 using BlastEcs.Helpers;
 using System.Diagnostics.CodeAnalysis;
 
-namespace BlastEcs;
+namespace BlastEcs.Collections;
 
 public sealed class Edges<T> where T : class
 {
@@ -105,5 +106,10 @@ public sealed class Edges<T> where T : class
     public TypeCollectionMap<Edge>.TypeCollectionMapEnumerator GetEnumerator()
     {
         return _edgeMap.GetEnumerator();
+    }
+
+    internal void Clear()
+    {
+        _edgeMap.Clear();
     }
 }

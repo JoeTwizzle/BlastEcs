@@ -2,19 +2,14 @@ using BlastEcs.Collections;
 
 namespace BlastEcs;
 
-readonly struct ComponentIndexInfo : IDisposable
+readonly struct ComponentIndexInfo
 {
-    public readonly Dictionary<int, int> ArchetypeMap;
-    public readonly BitMask ContainingArchetypes;
+    //public readonly Dictionary<int, int> ArchetypeMap;
+    public readonly QuickMask ContainingArchetypes;
 
     public ComponentIndexInfo()
     {
-        ArchetypeMap = new();
+        //ArchetypeMap = new();
         ContainingArchetypes = new();
-    }
-
-    public readonly void Dispose()
-    {
-        ContainingArchetypes.Dispose();
     }
 }

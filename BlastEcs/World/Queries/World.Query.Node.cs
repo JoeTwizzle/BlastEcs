@@ -68,8 +68,8 @@ public sealed partial class EcsWorld
                 {
                     validSet.SetRange(0, _world._archetypes.Count);
                 }
-                _world.GetArchetypesWith(_sources[i].WithKey, validSet, true);
-                _world.FilterArchetypesWithout(_sources[i].WithoutKey, validSet);
+                //_world.GetArchetypesWith(_sources[i].WithKey, validSet, true);
+                //_world.FilterArchetypesWithout(_sources[i].WithoutKey, validSet);
                 _potentiallyValidSets[i] = validSet;
             }
         }
@@ -119,7 +119,7 @@ public sealed partial class EcsWorld
                     rem ^= rem & -rem;
 
                     _state.ActiveMembers[sourceId] = archetypeId;
-                    var archetype = _world._archetypes[(uint)archetypeId];
+                    var archetype = _world._archetypes[     archetypeId];
 
                     for (int j = 0; j < source.ComplexTerms.Length; j++)
                     {
@@ -133,7 +133,7 @@ public sealed partial class EcsWorld
                             archetype.Key.ForeachTarget(complexTerm.Match, (target) =>
                             {
                                 targetMask
-                                    .SetBit(_world.GetEntityIndex(target).ArchetypeIndex);
+                                    .SetBit(_world.GetEntityIndex(target).ArchetypeSlotIndex);
                             });
 
                             targetMask //mask to only include valid archetypes by component filter

@@ -13,7 +13,6 @@ public readonly ref struct TypeCollectionKeyNoAlloc
 
     public TypeCollectionKeyNoAlloc(Span<ulong> types)
     {
-
         types.Sort();
         first = ref (types.Length > 0) ? ref types[0] : ref Unsafe.NullRef<ulong>();
         Length = types.Length;

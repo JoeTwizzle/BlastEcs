@@ -8,7 +8,7 @@ public sealed class FastMap<T>
     private readonly T[] FastValues;
     private readonly LongKeyMap<T> SlowRange;
 
-    public FastMap(ulong fastRange = 2048)
+    public FastMap(ulong fastRange = 16384)
     {
         FastRange = fastRange;
         FastValues = new T[fastRange];

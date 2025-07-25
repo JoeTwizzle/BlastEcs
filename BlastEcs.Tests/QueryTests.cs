@@ -15,7 +15,7 @@ class QueryTests
     record struct MemberOf;
     record struct MarriedTo;
     [Test]
-    public void TestMeDaddy()
+    public void FlecsRelationTest()
     {
         var other1 = world.CreateEntity();
         var other2 = world.CreateEntity();

@@ -17,7 +17,7 @@ public sealed partial class EcsWorld
 
     public bool Has(EcsHandle entity, EcsHandle kind, EcsHandle target)
     {
-        return GetEntityIndex(entity).Archetype.Has(GetHandleToPair(kind, target));
+        return GetEntityIndex(entity).Archetype.Has(new EcsHandle(kind, target));
     }
 
     public bool Has<TKind>(EcsHandle entity, EcsHandle target) where TKind : struct
@@ -36,7 +36,7 @@ public sealed partial class EcsWorld
     {
         Debug.Assert(Has<T>(entity));
         ref var entityIndex = ref GetEntityIndex(entity);
-        int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+        int tableIndex = entityIndex.TableSlotIndex;
         return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType<T>().Id);
     }
 
@@ -44,7 +44,7 @@ public sealed partial class EcsWorld
     {
         Debug.Assert(Has<T>(entity, target));
         ref var entityIndex = ref GetEntityIndex(entity);
-        int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+        int tableIndex = entityIndex.TableSlotIndex;
         return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToPair(GetHandleToType<T>(), target).Id);
     }
 
@@ -55,7 +55,7 @@ public sealed partial class EcsWorld
         exists = entityIndex.Archetype.Table.Key.HasType(componentHandle);
         if (exists)
         {
-            int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+            int tableIndex = entityIndex.TableSlotIndex;
             return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToType<T>().Id);
         }
         return ref Unsafe.NullRef<T>();
@@ -68,7 +68,7 @@ public sealed partial class EcsWorld
         exists = entityIndex.Archetype.Table.Key.HasType(componentHandle);
         if (exists)
         {
-            int tableIndex = entityIndex.Archetype.TableIndices[entityIndex.ArchetypeIndex].tableIndex;
+            int tableIndex = entityIndex.TableSlotIndex;
             return ref entityIndex.Archetype.Table.GetRefAt<T>(tableIndex, GetHandleToPair(GetHandleToType<T>(), target).Id);
         }
         return ref Unsafe.NullRef<T>();
