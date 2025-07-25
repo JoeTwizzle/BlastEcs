@@ -17,7 +17,7 @@ public sealed partial class EcsWorld
 
     public bool Has(EcsHandle entity, EcsHandle kind, EcsHandle target)
     {
-        return GetEntityIndex(entity).Archetype.Has(GetHandleToPair(kind, target));
+        return GetEntityIndex(entity).Archetype.Has(new EcsHandle(kind, target));
     }
 
     public bool Has<TKind>(EcsHandle entity, EcsHandle target) where TKind : struct

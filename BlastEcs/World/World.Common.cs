@@ -22,7 +22,6 @@ public sealed partial class EcsWorld
         _deadEntities = new();
         _archetypeMap = new();
         _tableMap = new();
-        _edges = new(0);
         _typeRegistry = [];
         //_pairTypeMap = new();
         //_componentIndex = new();

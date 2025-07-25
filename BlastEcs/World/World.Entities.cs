@@ -3,6 +3,7 @@ using BlastEcs.Collections;
 using BlastEcs.Helpers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 
 namespace BlastEcs;
 public sealed partial class EcsWorld
@@ -78,7 +79,7 @@ public sealed partial class EcsWorld
 
     public void DestroyEntity(EcsHandle entity)
     {
-        //RemoveReferencesTo(entity);
+        RemoveReferencesTo(entity);
         ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
         var pair = arch.Entities[entityIndex.ArchetypeSlotIndex];
@@ -100,58 +101,99 @@ public sealed partial class EcsWorld
         }
     }
 
-    //private void RemoveReferencesTo(EcsHandle handle)
-    //{
-    //    //Get archetypes that contain this entity
-    //    if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
-    //    {
-    //        RemoveComponentFromArchetypes(handle, compInfo.ContainingArchetypes);
-    //        _componentIndex.Remove(handle.Id);
-    //    }
+    private void RemoveReferencesTo(EcsHandle handle)
+    {
+        var archetypes = _archetypes;
 
-    //    //Are there any archetypes which have this component as part of a relationship?
-    //    if (handle.IsPair || !_pairTypeMap.TryGetValue(handle.Entity, out var types))
-    //    {
-    //        return;
-    //    }
+        var indefiniteKind = new EcsHandle(AnyEntity, handle); 
+        var indefiniteTarget = new EcsHandle(handle, AnyEntity);
+        //Get archetypes that contain this entity
+        for (int i = 0; i < archetypes.Count; i++)
+        {
+            if (archetypes[i].Has(handle))
+            {
+                RemoveComponentFromArchetype(handle, archetypes[i]);
+            }
+        }
 
-    //    foreach (var entityB in types)
-    //    {
-    //        //This entity is the Kind
-    //        var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(entityB));
-    //        GetArchetypesWith(pairA,,true)
-    //        if (_componentIndex.TryGetValue(pairA.Id, out compInfo))
-    //        {
-    //            RemoveComponentFromArchetypes(pairA, compInfo.ContainingArchetypes);
-    //            _componentIndex.Remove(pairA.Id);
-    //        }
-    //        //This entity is the Target
-    //        var pairB = GetHandleToPair(GetEntity(entityB), GetEntity(handle.Entity));
-    //        if (_componentIndex.TryGetValue(pairB.Id, out compInfo))
-    //        {
-    //            RemoveComponentFromArchetypes(pairB, compInfo.ContainingArchetypes);
-    //            _componentIndex.Remove(pairB.Id);
-    //        }
-    //        //This entity is the Kind
-    //        var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-    //        if (_componentIndex.TryGetValue(indefiniteTarget.Id, out compInfo))
-    //        {
-    //            _componentIndex.Remove(indefiniteTarget.Id);
-    //        }
-    //        //This entity is the Target
-    //        var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-    //        if (_componentIndex.TryGetValue(indefiniteKind.Id, out compInfo))
-    //        {
-    //            _componentIndex.Remove(indefiniteKind.Id);
-    //        }
-    //    }
-    //}
+        for (int i = 0; i < _archetypes.Count; i++)
+        {
+            if (_archetypes[i].Has(indefiniteKind))
+            {
+                _archetypes[i].Key.ForeachKind(indefiniteKind, (kind) =>
+                {
+                    RemoveComponentFromArchetype(GetHandleToPair(GetEntity(kind), handle), _archetypes[i]);
+                });
+            }
+        }
+
+        for (int i = 0; i < _archetypes.Count; i++)
+        {
+            if (_archetypes[i].Has(indefiniteTarget))
+            {
+                _archetypes[i].Key.ForeachTarget(indefiniteTarget, (target) =>
+                {
+                    RemoveComponentFromArchetype(GetHandleToPair(handle, GetEntity(target)), _archetypes[i]);
+                });
+            }
+        }
+        //if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
+        //{
+        //    RemoveComponentFromArchetypes(handle, compInfo.ContainingArchetypes);
+        //    _componentIndex.Remove(handle.Id);
+        //}
+
+        ////Are there any archetypes which have this component as part of a relationship?
+        //if (handle.IsPair || !_pairTypeMap.TryGetValue(handle.Entity, out var types))
+        //{
+        //    return;
+        //}
+
+        //foreach (var entityB in types)
+        //{
+        //    //This entity is the Kind
+        //    var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(entityB));
+        //    GetArchetypesWith(pairA,, true)
+        //    if (_componentIndex.TryGetValue(pairA.Id, out compInfo))
+        //    {
+        //        RemoveComponentFromArchetypes(pairA, compInfo.ContainingArchetypes);
+        //        _componentIndex.Remove(pairA.Id);
+        //    }
+        //    //This entity is the Target
+        //    var pairB = GetHandleToPair(GetEntity(entityB), GetEntity(handle.Entity));
+        //    if (_componentIndex.TryGetValue(pairB.Id, out compInfo))
+        //    {
+        //        RemoveComponentFromArchetypes(pairB, compInfo.ContainingArchetypes);
+        //        _componentIndex.Remove(pairB.Id);
+        //    }
+        //    //This entity is the Kind
+        //    var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
+        //    if (_componentIndex.TryGetValue(indefiniteTarget.Id, out compInfo))
+        //    {
+        //        _componentIndex.Remove(indefiniteTarget.Id);
+        //    }
+        //    //This entity is the Target
+        //    var indefiniteKind = GetRelationWithIndefiniteKind(handle);
+        //    if (_componentIndex.TryGetValue(indefiniteKind.Id, out compInfo))
+        //    {
+        //        _componentIndex.Remove(indefiniteKind.Id);
+        //    }
+        //}
+    }
+
+    private void RemoveComponentFromArchetype(EcsHandle entity, Archetype archetype)
+    {
+        var oldArch = archetype;
+        var newArch = GetArchetypeRemove(oldArch, entity);
+        MoveAllEntities(oldArch, newArch);
+        DestroyArchetype(oldArch);
+    }
 
     private void RemoveComponentFromArchetypes(EcsHandle entity, QuickMask archetypes)
     {
         foreach (var ids in archetypes)
         {
-            var oldArch = _archetypes[(uint)ids];
+            var oldArch = _archetypes[ids];
             var newArch = GetArchetypeRemove(oldArch, entity);
             MoveAllEntities(oldArch, newArch);
             DestroyArchetype(oldArch);
@@ -168,9 +210,12 @@ public sealed partial class EcsWorld
                 int id = idx * (sizeof(ulong) * 8) + BitOperations.TrailingZeroCount(bitItem);
                 bitItem ^= bitItem & -bitItem;
 
-                var oldArch = _archetypes[(uint)id];
-                var newArch = GetArchetypeRemove(oldArch, component);
-                MoveAllEntities(oldArch, newArch);
+                var oldArch = _archetypes[id];
+                if (oldArch.Key.Types.Length > 0)
+                {
+                    var newArch = GetArchetypeRemove(oldArch, component);
+                    MoveAllEntities(oldArch, newArch);
+                }
                 DestroyArchetype(oldArch);
             }
         }
@@ -180,7 +225,7 @@ public sealed partial class EcsWorld
     {
         foreach (var ids in archetypes.Keys)
         {
-            var oldArch = _archetypes[(uint)ids];
+            var oldArch = _archetypes[ids];
 
             var newArch = GetArchetypeRemove(oldArch, entity);
             MoveAllEntities(oldArch, newArch);
@@ -192,7 +237,7 @@ public sealed partial class EcsWorld
     {
         foreach (var ids in archetypes)
         {
-            var oldArch = _archetypes[(uint)ids];
+            var oldArch = _archetypes[ids];
             var newArch = GetArchetypeRemove(oldArch, entity);
             MoveAllEntities(oldArch, newArch);
             DestroyArchetype(oldArch);
@@ -209,7 +254,7 @@ public sealed partial class EcsWorld
             return ent;
         }
         uint id = ++_entityCount;
-        if (id == uint.MaxValue) ThrowHelper.ThrowInvalidOperationException("Maximum number of entities exceded");
+        if (id >= EcsHandle.MaxWorldEntityCount) ThrowHelper.ThrowInvalidOperationException("Maximum number of entities exceded");
         return id;
     }
 
@@ -240,38 +285,38 @@ public sealed partial class EcsWorld
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public EcsHandle GetHandleToPair(EcsHandle identifier, EcsHandle target)
+    public EcsHandle GetHandleToPair(EcsHandle kind, EcsHandle target)
     {
-        var pair = new EcsHandle(identifier, target);
+        var pair = new EcsHandle(kind, target);
         if (GetEntityIndex(pair).Generation > 0)
         {
             return pair;
         }
-        return CreatePair(identifier, target);
+        return CreatePair(kind, target);
     }
 
-    private EcsHandle CreatePair(EcsHandle identifier, EcsHandle target)
+    private EcsHandle CreatePair(EcsHandle kind, EcsHandle target)
     {
         EcsHandle markerEntity;
 
-        if (identifier.IsTagRelation || (!HandleIsComponent(identifier) && !HandleIsComponent(target)))
+        if (kind.IsTagRelation || (!HandleIsComponent(kind) && !HandleIsComponent(target)))
         {
-            markerEntity = CreatePair(identifier, target, _entityArchetype);
+            markerEntity = CreatePair(kind, target, _entityArchetype);
         }
-        else if (HandleIsComponent(identifier))
+        else if (HandleIsComponent(kind))
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype);
-            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
+            markerEntity = CreatePair(kind, target, _componentArchetype);
+            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(kind);
         }
         else if (HandleIsComponent(target))
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype);
+            markerEntity = CreatePair(kind, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(target);
         }
         else
         {
-            markerEntity = CreatePair(identifier, target, _componentArchetype);
-            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(identifier);
+            markerEntity = CreatePair(kind, target, _componentArchetype);
+            GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(kind);
         }
         return markerEntity;
     }

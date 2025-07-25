@@ -10,11 +10,11 @@ public sealed class Archetype : IEquatable<Archetype>
     public readonly TypeCollectionKey Key;
     public int Id => _id;
     public Table Table => _table;
-    //public Edges<Archetype> Edges => _edges;
+    public Edges<Archetype> Edges => _edges;
     //Index of an entity in a table's component arrays
     public GrowList<EcsHandle> Entities => _entities;
 
-    //private readonly Edges<Archetype> _edges;
+    private readonly Edges<Archetype> _edges;
     private readonly Table _table;
     private readonly int _id;
     private readonly GrowList<EcsHandle> _entities;
@@ -22,6 +22,7 @@ public sealed class Archetype : IEquatable<Archetype>
     public Archetype(int id, Table table, TypeCollectionKey key)
     {
         Key = key;
+        _edges = new();
         _table = table;
         _id = id;
         _entities = new();

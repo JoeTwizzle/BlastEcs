@@ -10,13 +10,11 @@ public sealed partial class EcsWorld
 {
     private int archetypeCount;
 
-    private readonly TrieNode _edges;
-
     /// <summary>
     /// Maps a type key to an archetype id
     /// </summary>
     private readonly TypeCollectionMap<int> _archetypeMap;
-    private readonly MaskedGrowList<Archetype> _archetypes;
+    private readonly List<Archetype> _archetypes;
     private readonly GrowList<int> _deadArchetypes;
     /// <summary>
     /// For every entity which is used as a type in an Archetype
@@ -121,7 +119,7 @@ public sealed partial class EcsWorld
     {
         if (_archetypeMap.TryGetValue(key, out var archetypeId))
         {
-            return _archetypes[(uint)archetypeId];
+            return _archetypes[archetypeId];
         }
         return CreateArchetype(new(key));
     }
@@ -192,17 +190,18 @@ public sealed partial class EcsWorld
         // [Variadic: CopyLines()]
         var addedId_T0 = GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyArgs(addedId)]
-        var key = new TypeCollectionKeyNoAlloc([addedId_T0]);
-        if (_edges.TryGetEdgeAdd(key.Types, currentArchetype.Id, out var newArchId))
+        var lookupKey = new TypeCollectionKeyNoAlloc([addedId_T0]);
+        if (currentArchetype.Edges.TryGetEdgeAdd(lookupKey, out var newArch))
         {
-            return _archetypes[newArchId];
+            return newArch;
         }
         var oldTypes = currentArchetype.Key.Types;
         // [Variadic: CopyArgs(addedId)]
         Span<ulong> newTypes = [.. oldTypes, addedId_T0];
-        var newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
-        var key2 = new TypeCollectionKey(key);
-        _edges.AddEdgeAdd(key2.Types, currentArchetype.Id, newArch.Id);
+        newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
+        var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
+        currentArchetype.Edges.AddEdgeAdd(lookupKeyAlloc, newArch);
+        newArch.Edges.AddEdgeRemove(lookupKeyAlloc, currentArchetype);
         return newArch;
     }
 
@@ -216,16 +215,16 @@ public sealed partial class EcsWorld
         return RemoveArchetypeImpl(key, currentArchetype);
     }
 
-    private Archetype RemoveArchetypeImpl(TypeCollectionKeyNoAlloc key, Archetype currentArchetype)
+    private Archetype RemoveArchetypeImpl(TypeCollectionKeyNoAlloc lookupKey, Archetype currentArchetype)
     {
-        if (_edges.TryGetEdgeRemove(key.Types, currentArchetype.Id, out var newArchId))
+        if (currentArchetype.Edges.TryGetEdgeRemove(lookupKey, out var newArch))
         {
-            return _archetypes[newArchId];
+            return newArch;
         }
-        var oldTypes = currentArchetype.Key.Types;
 
-        Span<ulong> newTypes = stackalloc ulong[oldTypes.Length - key.Length];
-        var removedTypes = key.Types;
+        var oldTypes = currentArchetype.Key.Types;
+        Span<ulong> newTypes = stackalloc ulong[oldTypes.Length - lookupKey.Length];
+        var removedTypes = lookupKey.Types;
         int count = 0;
         for (int i = 0; i < oldTypes.Length; i++)
         {
@@ -241,27 +240,31 @@ public sealed partial class EcsWorld
                 newTypes[count++] = oldTypes[i];
             }
         }
-        var newArch = GetOrCreateArchetype(new(newTypes));
-        var key2 = new TypeCollectionKey(key);
-        _edges.AddEdgeRemove(key2.Types, currentArchetype.Id, newArch.Id);
+        var newKey = new TypeCollectionKeyNoAlloc(newTypes);
+        newArch = GetOrCreateArchetype(newKey);
+        var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
+        currentArchetype.Edges.AddEdgeRemove(lookupKeyAlloc, newArch);
+        newArch.Edges.AddEdgeAdd(lookupKeyAlloc, currentArchetype);
         return newArch;
     }
 
     private Archetype GetArchetypeAdd(Archetype currentArchetype, EcsHandle addedComponent)
     {
         var addedId = addedComponent.Id;
-        var key = new TypeCollectionKeyNoAlloc([addedId]);
-        if (_edges.TryGetEdgeAdd(key.Types, currentArchetype.Id, out var newArchId))
+        var lookupKey = new TypeCollectionKeyNoAlloc([addedId]);
+        if (currentArchetype.Edges.TryGetEdgeAdd(lookupKey, out var newArch))
         {
-            return _archetypes[newArchId];
+            return newArch;
         }
         var oldTypes = currentArchetype.Key.Types;
         var newTypes = new ulong[oldTypes.Length + 1];
         oldTypes.CopyTo(newTypes);
         newTypes[newTypes.Length - 1] = addedId;
-        var newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
-        var key2 = new TypeCollectionKey(key);
-        _edges.AddEdgeAdd(key2.Types, currentArchetype.Id, newArch.Id);
+        var newKey = new TypeCollectionKeyNoAlloc(newTypes);
+        newArch = GetOrCreateArchetype(newKey);
+        var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
+        currentArchetype.Edges.AddEdgeAdd(lookupKeyAlloc, newArch);
+        newArch.Edges.AddEdgeRemove(lookupKeyAlloc, currentArchetype);
         return newArch;
     }
 
@@ -269,10 +272,11 @@ public sealed partial class EcsWorld
     {
         var removedId = removedComponent.Id;
         Debug.Assert(currentArchetype.Has(removedComponent));
-        var key = new TypeCollectionKeyNoAlloc([removedId]);
-        if (_edges.TryGetEdgeRemove(key.Types, currentArchetype.Id, out var newArchId))
+        var lookupKey = new TypeCollectionKeyNoAlloc([removedId]);
+        if (currentArchetype.Edges.TryGetEdgeRemove(lookupKey, out var newArch))
         {
-            return _archetypes[newArchId];
+            Debug.Assert(newArch != currentArchetype);
+            return newArch;
         }
         var oldTypes = currentArchetype.Key.Types;
         Span<ulong> newTypes = stackalloc ulong[oldTypes.Length - 1];
@@ -285,9 +289,12 @@ public sealed partial class EcsWorld
             oldTypes.Slice(0, skipIndex).CopyTo(destA);
             oldTypes.Slice(skipIndex + 1).CopyTo(destb);
         }
-        var newArch = GetOrCreateArchetype(new(newTypes));
-        var key2 = new TypeCollectionKey(key);
-        _edges.AddEdgeRemove(key2.Types, currentArchetype.Id, newArch.Id);
+        var newKey = new TypeCollectionKeyNoAlloc(newTypes);
+        newArch = GetOrCreateArchetype(newKey);
+        var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
+        currentArchetype.Edges.AddEdgeRemove(lookupKeyAlloc, newArch);
+        newArch.Edges.AddEdgeAdd(lookupKeyAlloc, currentArchetype);
+        Debug.Assert(newArch != currentArchetype);
         return newArch;
     }
 
@@ -345,8 +352,12 @@ public sealed partial class EcsWorld
         _archetypeMap.Remove(arch.Key);
         _archetypes.RemoveAt(arch.Id);
         _deadArchetypes.Add(arch.Id);
-        _edges.RemoveEdgeAdd(arch.Key.Types, arch.Id);
-        _edges.RemoveEdgeRemove(arch.Key.Types, arch.Id);
+        foreach (var target in arch.Edges)
+        {
+            target.Value.Add?.Edges.RemoveEdgeRemove(target.Key);
+            target.Value.Remove?.Edges.RemoveEdgeAdd(target.Key);
+        }
+        arch.Edges.Clear();
         //var edge = _edges[new IndexedTypeCollectionKeyNoAlloc(arch.Id, arch.Key)];
 
         //foreach (var keyValue in _edges)
