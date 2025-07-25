@@ -1,5 +1,4 @@
 using BlastEcs.Helpers;
-using System;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs.Collections;

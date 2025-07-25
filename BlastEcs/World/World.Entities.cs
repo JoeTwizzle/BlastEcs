@@ -3,7 +3,6 @@ using BlastEcs.Collections;
 using BlastEcs.Helpers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 
 namespace BlastEcs;
 public sealed partial class EcsWorld
@@ -105,7 +104,7 @@ public sealed partial class EcsWorld
     {
         var archetypes = _archetypes;
 
-        var indefiniteKind = new EcsHandle(AnyEntity, handle); 
+        var indefiniteKind = new EcsHandle(AnyEntity, handle);
         var indefiniteTarget = new EcsHandle(handle, AnyEntity);
         //Get archetypes that contain this entity
         for (int i = 0; i < archetypes.Count; i++)

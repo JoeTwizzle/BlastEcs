@@ -64,11 +64,11 @@ public readonly partial struct EcsHandle
     /// </summary>
     public bool IsTagRelation => (Flags & EntityFlags.IsTagRelation) != 0;
 
-    public const ulong EntityMask =     0x00FF_FFFF_0000_0000ul;
-    public const ulong TargetMask =     0x0000_0000_00FF_FFFFul;
+    public const ulong EntityMask = 0x00FF_FFFF_0000_0000ul;
+    public const ulong TargetMask = 0x0000_0000_00FF_FFFFul;
     public const ulong GenerationMask = 0x0000_0000_0000_FFFFul;
-    public const ulong WorldMask =      0x0000_0000_FF00_0000ul;
-    public const ulong FlagsMask =      0xFF00_0000_0000_0000ul;
+    public const ulong WorldMask = 0x0000_0000_FF00_0000ul;
+    public const ulong FlagsMask = 0xFF00_0000_0000_0000ul;
     public const ulong KindMask = EntityMask;
     public const ulong MaxWorldEntityCount = 16777216;
 

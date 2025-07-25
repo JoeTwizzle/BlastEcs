@@ -61,7 +61,7 @@ public readonly struct TypeCollectionKey
 
         var otherTypes = other.Types;
         Span<ulong> maskedItems = [.. _types];
-        maskedItems.MaskBits(0xFF000000_00000000);
+        maskedItems.MaskBits(EcsHandle.FlagsMask);
         for (int i = 0; i < otherTypes.Length; i++)
         {
             var handle = new EcsHandle(otherTypes[i]);
@@ -80,7 +80,7 @@ public readonly struct TypeCollectionKey
                 else
                 {
                     Types.CopyTo(maskedItems);
-                    maskedItems.MaskBits(0x00FFFFFF00000000);
+                    maskedItems.MaskBits(EcsHandle.KindMask);
                     if (handle.Target == EcsWorld.AnyId &&
                     !maskedItems.Contains(((ulong)handle.Entity) << 32))
                     {
@@ -89,7 +89,7 @@ public readonly struct TypeCollectionKey
                     else
                     {
                         Types.CopyTo(maskedItems);
-                        maskedItems.MaskBits(0x0000000000FFFFFF);
+                        maskedItems.MaskBits(EcsHandle.TargetMask);
                         if (handle.Entity == EcsWorld.AnyId &&
                          !maskedItems.Contains(handle.Target))
                         {
@@ -109,11 +109,11 @@ public readonly struct TypeCollectionKey
             //Check if handle contains an "Any" query
 
             //Does the key contain any pair at all?
-            if (handle.Entity == EcsWorld.AnyId && handle.Target == EcsWorld.AnyId)
+            if (handle.Kind == EcsWorld.AnyId && handle.Target == EcsWorld.AnyId)
             {
                 Span<ulong> maskedItems = stackalloc ulong[_types.Length];
                 Types.CopyTo(maskedItems);
-                maskedItems.MaskBits(0xFF000000_00000000);
+                maskedItems.MaskBits(EcsHandle.FlagsMask);
                 return maskedItems.Contains(((ulong)EntityFlags.IsPair) << 56);
             }
 
@@ -122,16 +122,16 @@ public readonly struct TypeCollectionKey
             {
                 Span<ulong> maskedItems = stackalloc ulong[_types.Length];
                 Types.CopyTo(maskedItems);
-                maskedItems.MaskBits(0x00FFFFFF00000000);
+                maskedItems.MaskBits(EcsHandle.KindMask);
                 return maskedItems.Contains(((ulong)handle.Entity) << 32);
             }
 
             //Does the key contain any relationships with the given target
-            else if (handle.Entity == EcsWorld.AnyId)
+            else if (handle.Kind == EcsWorld.AnyId)
             {
                 Span<ulong> maskedItems = stackalloc ulong[_types.Length];
                 Types.CopyTo(maskedItems);
-                maskedItems.MaskBits(0x0000000000FFFFFF);
+                maskedItems.MaskBits(EcsHandle.TargetMask);
                 return maskedItems.Contains(handle.Target);
             }
 
@@ -183,7 +183,7 @@ public readonly struct TypeCollectionKey
             var pairsMatchingTarget = (match.Id & EcsHandle.TargetMask) | EntityFlags.IsPairBit;
             for (int i = 0; i < maskedItems.Length; i++)
             {
-                if ((maskedItems[i] & pairsMatchingTarget) == pairsMatchingTarget)                 
+                if ((maskedItems[i] & pairsMatchingTarget) == pairsMatchingTarget)
                 {
                     eachSource(new EcsHandle(Types[i]).Kind);
                 }

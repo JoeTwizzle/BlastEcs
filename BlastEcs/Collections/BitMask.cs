@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
@@ -224,7 +223,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
             }
             else
             {
-                break; 
+                break;
             }
         }
 

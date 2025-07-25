@@ -119,7 +119,7 @@ public sealed partial class EcsWorld
                     rem ^= rem & -rem;
 
                     _state.ActiveMembers[sourceId] = archetypeId;
-                    var archetype = _world._archetypes[     archetypeId];
+                    var archetype = _world._archetypes[archetypeId];
 
                     for (int j = 0; j < source.ComplexTerms.Length; j++)
                     {

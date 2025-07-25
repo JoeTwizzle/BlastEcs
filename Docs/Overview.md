@@ -87,9 +87,9 @@ An EcsHandle is considered 'Alive' after its creation using ``CreateEntity(...)`
 
 An EcsHandle is considered 'Dead' after its destruction using ``DestroyEntity(...)``.
 
-If an EcsHandle ``B`` is attached to another EcsHandle ``A``, either by itself, as a Tag or Component, or as part of a Pair, then the EcsHandle ``B`` is Removed from EcsHandle ``A`` upon EcsHandle ``B`` being destroyed.
+If an EcsHandle ``B`` is attached to another EcsHandle ``A``, either by itself as a Tag or Component, or as part of a Pair, then the EcsHandle ``B`` is Removed from EcsHandle ``A`` upon EcsHandle ``B`` being destroyed.
 
-**FIXME: Allow custom behaviour, such as destroying any entities with the EcsHandle, or Replacing it, etc..**
+**TODO: Allow custom behaviour, such as destroying any entities with the EcsHandle, or Replacing it, etc..**
 
 ## Constraints (WIP)
 
