@@ -21,7 +21,7 @@ public sealed class Table : IEquatable<Table>
 
     private readonly int _id;
     private readonly TypeCollectionKey _key;
-    private readonly Array[] _components;
+    private readonly Array[] _componentArrays;
     private readonly LongKeyMap<int> _typeIndices;
     //private readonly Edges<Table> _edges;
     private int _count;
@@ -31,14 +31,14 @@ public sealed class Table : IEquatable<Table>
     {
         _id = id;
         _key = key;
-        _components = new Array[componentTypes.Length];
+        _componentArrays = new Array[componentTypes.Length];
         _capacity = initialCapacity;
-        _typeIndices = new(_components.Length);
+        _typeIndices = new(_componentArrays.Length);
         Debug.Assert(key.Types.Length == componentTypes.Length);
-        for (int i = 0; i < _components.Length; i++)
+        for (int i = 0; i < _componentArrays.Length; i++)
         {
             _typeIndices.Add(key.Types[i], i);
-            _components[i] = Array.CreateInstance(componentTypes[i], initialCapacity);
+            _componentArrays[i] = Array.CreateInstance(componentTypes[i], initialCapacity);
         }
     }
 
@@ -71,9 +71,9 @@ public sealed class Table : IEquatable<Table>
     public void FillHoleAt(int index)
     {
         _count--;
-        for (int i = 0; i < _components.Length; i++)
+        for (int i = 0; i < _componentArrays.Length; i++)
         {
-            Array.Copy(_components[i], _count, _components[i], index, 1);
+            Array.Copy(_componentArrays[i], _count, _componentArrays[i], index, 1);
         }
     }
 
@@ -84,9 +84,9 @@ public sealed class Table : IEquatable<Table>
             ThrowHelper.ThrowArgumentException();
         }
         _count -= count;
-        for (int i = 0; i < _components.Length; i++)
+        for (int i = 0; i < _componentArrays.Length; i++)
         {
-            Array.Copy(_components[i], _count, _components[i], index, count);
+            Array.Copy(_componentArrays[i], _count, _componentArrays[i], index, count);
         }
     }
 
@@ -101,7 +101,7 @@ public sealed class Table : IEquatable<Table>
             {
                 if (type == destTypes[j])
                 {
-                    Array.Copy(_components[i], srcIndex, dest._components[j], destIndex, count);
+                    Array.Copy(_componentArrays[i], srcIndex, dest._componentArrays[j], destIndex, count);
                     break;
                 }
             }
@@ -112,7 +112,7 @@ public sealed class Table : IEquatable<Table>
     {
         if (_typeIndices.TryGetValue(handle, out int i))
         {
-            return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_components[i])), index);
+            return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_componentArrays[i])), index);
         }
         ThrowHelper.ThrowArgumentException();
         return ref Unsafe.NullRef<T>();
@@ -120,22 +120,22 @@ public sealed class Table : IEquatable<Table>
 
     internal T[] GetComponentArray<T>(int componentIndex) where T : struct
     {
-        return (T[])_components[componentIndex];
+        return (T[])_componentArrays[componentIndex];
     }
 
     internal ref T GetRawRefAt<T>(int entityIndex, int componentIndex) where T : struct
     {
-        return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_components[componentIndex])), entityIndex);
+        return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_componentArrays[componentIndex])), entityIndex);
     }
 
     private void Resize()
     {
         _capacity *= 2;
-        for (int i = 0; i < _components.Length; i++)
+        for (int i = 0; i < _componentArrays.Length; i++)
         {
-            var newArr = Array.CreateInstanceFromArrayType(_components[i].GetType(), _capacity);
-            _components[i].CopyTo(newArr, 0);
-            _components[i] = newArr;
+            var newArr = Array.CreateInstanceFromArrayType(_componentArrays[i].GetType(), _capacity);
+            _componentArrays[i].CopyTo(newArr, 0);
+            _componentArrays[i] = newArr;
         }
     }
 

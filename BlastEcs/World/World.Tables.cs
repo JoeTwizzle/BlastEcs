@@ -51,7 +51,7 @@ public sealed partial class EcsWorld
 
         if (count == components.Length)
         {
-            return CreateTable(new(key));
+            return CreateTable(new TypeCollectionKey(key));
         }
         else
         {
@@ -60,7 +60,7 @@ public sealed partial class EcsWorld
             {
                 return _tables[id];
             }
-            return CreateTable(new(key2));
+            return CreateTable(new TypeCollectionKey(key2));
         }
     }
 
