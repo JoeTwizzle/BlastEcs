@@ -14,40 +14,50 @@ public struct TestComponent5;
 [MemoryDiagnoser]
 public class WorldBenchmarks
 {
-    [Benchmark(Baseline = true)]
-    public void WorldAddRemoveRelation2()
-    {
-        var world = new EcsWorld();
-        for (int i = 0; i < 100000; i++)
-        {
-            var e = world.CreateEntity();
-            var kind = world.CreateEntity();
-            var target = world.CreateEntity();
-            world.AddRelation(e, kind, target);
-            //world.DestroyEntity(kind);
-            //world.DestroyEntity(target);
-        }
-    }
+    //[Benchmark(Baseline = true)]
+    //public void WorldAddRemoveRelation2()
+    //{
+    //    var world = new EcsWorld();
+    //    for (int i = 0; i < 100000; i++)
+    //    {
+    //        var e = world.CreateEntity();
+    //        var kind = world.CreateEntity();
+    //        var target = world.CreateEntity();
+    //        world.AddRelation(e, kind, target);
+    //        world.DestroyEntity(kind);
+    //        world.DestroyEntity(target);
+    //    }
+    //}
 
-    [Benchmark()]
-    public void WorldAddTag()
+    //[Benchmark()]
+    //public void WorldAddTag()
+    //{
+    //    var world = new EcsWorld();
+    //    for (int i = 0; i < 10000; i++)
+    //    {
+    //        var e = world.CreateEntity([]);
+    //        world.Add<TestTag>(e);
+    //    }
+    //}
+
+    //[Benchmark()]
+    //public void WorldAddComponent()
+    //{
+    //    var world = new EcsWorld();
+    //    for (int i = 0; i < 100000; i++)
+    //    {
+    //        var e = world.CreateEntity();
+    //        world.Add<TestComponent>(e);
+    //    }
+    //}
+
+    [Benchmark]
+    public void CreateEntityWithThreeComponentSimple()
     {
         var world = new EcsWorld();
         for (int i = 0; i < 10000; i++)
         {
-            var e = world.CreateEntity([]);
-            world.Add<TestTag>(e);
-        }
-    }
-
-    [Benchmark()]
-    public void WorldAddComponent()
-    {
-        var world = new EcsWorld();
-        for (int i = 0; i < 10000; i++)
-        {
-            var e = world.CreateEntity([]);
-            world.Add<TestComponent>(e);
+            world.CreateEntity();
         }
     }
 }

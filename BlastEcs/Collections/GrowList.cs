@@ -17,15 +17,6 @@ public sealed class GrowList<T>
         _array = new T[initialSize];
     }
 
-    public void Add()
-    {
-        if (_count == _array.Length)
-        {
-            Resize();
-        }
-        _count++;
-    }
-
     public void Add(T value)
     {
         if (_count == _array.Length)
@@ -50,15 +41,6 @@ public sealed class GrowList<T>
         Array.Resize(ref _array, _array.Length * 2);
     }
 
-    public void Remove()
-    {
-        if (_count == 0)
-        {
-            ThrowHelper.ThrowInvalidOperationException();
-        }
-        _count--;
-    }
-
     public void InvalidateAt(int index)
     {
         _array[index] = default!;
@@ -78,6 +60,18 @@ public sealed class GrowList<T>
         }
         _count--;
         _array[index] = _array[_count];
+    }
+
+    public void RemoveRangeDense(int index, int count)
+    {
+        _count -= count;
+        Array.Copy(_array, _count, _array, index, count);
+    }
+
+    public void RemoveRangeDenseOrdered(int index, int count)
+    {
+        Array.Copy(_array, index + count, _array, index, _count - (index + count));
+        _count -= count;
     }
 
     public void RemoveAtDenseOrdered(int index)

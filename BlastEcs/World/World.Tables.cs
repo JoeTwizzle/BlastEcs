@@ -24,12 +24,11 @@ public sealed partial class EcsWorld
         }
 
         var table = new Table(tableId, types, key);
-        _tables.Add();
-        _tables[tableId] = table;
+        _tables.Add(table);
 
         return table;
     }
-
+    
     private Table GetTable(TypeCollectionKeyNoAlloc key)
     {
         if (_tableMap.TryGetValue(key, out int id))
@@ -64,7 +63,7 @@ public sealed partial class EcsWorld
         }
     }
 
-    private Table? TryGetTable(TypeCollectionKeyNoAlloc key)
+    private Table? GetTableOrNull(TypeCollectionKeyNoAlloc key)
     {
         if (_tableMap.TryGetValue(key, out int id))
         {

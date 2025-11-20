@@ -41,11 +41,10 @@ public sealed partial class EcsWorld
         int tableId = tableCount++;
         _tableMap.Add(key, tableId);
         var table = new Table(tableId, [typeof(EcsComponent)], key);
-        _tables.Add();
-        _tables[tableId] = table;
+        _tables.Add(table);
 
         var arch = entityIndex.Archetype = _componentArchetype = CreateArchetype(key);
-        entityIndex.TableSlotIndex = arch.Table.Add();
+        entityIndex.TableSlotIndex = arch.Table.AddEntity(componentEntity);
         entityIndex.ArchetypeSlotIndex = arch.AddEntity(componentEntity);
 
         //Register "Any" Special type

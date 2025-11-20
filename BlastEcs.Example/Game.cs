@@ -22,8 +22,6 @@ sealed class Game
             var target = world.CreateEntity();
             world.AddRelation(e, kind, target);
             world.DestroyEntity(e);
-            world.DestroyEntity(kind);
-            world.DestroyEntity(target);
         }
     }
 

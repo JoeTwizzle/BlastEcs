@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
+
 public sealed partial class EcsWorld
 {
     private uint _entityCount;
@@ -12,9 +13,10 @@ public sealed partial class EcsWorld
     private readonly FastMap<EntityIndex> _entities;
     private readonly GrowList<uint> _deadEntities;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public EcsHandle CreateEntity()
     {
-        return CreateEntity([]);
+        return CreateEntity(_entityArchetype);
     }
 
     [Variadic(nameof(T0), VariadicCount)]
@@ -56,7 +58,7 @@ public sealed partial class EcsWorld
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         entityIndex.Flags = flags;
         var entity = new EcsHandle(id, gen, _worldId, flags);
-        entityIndex.TableSlotIndex = archetype.Table.Add();
+        entityIndex.TableSlotIndex = archetype.Table.AddEntity(entity);
         entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity);
         if (EntityEventsEnabled)
         {
@@ -71,7 +73,7 @@ public sealed partial class EcsWorld
         ref EntityIndex entityIndex = ref GetEntityIndex(handle);
         entityIndex.Archetype = archetype;
         entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        entityIndex.TableSlotIndex = archetype.Table.Add();
+        entityIndex.TableSlotIndex = archetype.Table.AddEntity(handle);
         entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle);
         return handle;
     }
@@ -82,10 +84,15 @@ public sealed partial class EcsWorld
         ref EntityIndex entityIndex = ref GetEntityIndex(entity);
         var arch = entityIndex.Archetype;
         var pair = arch.Entities[entityIndex.ArchetypeSlotIndex];
-        //TODO: update entityIndex.ArchetypeSlotIndex of last
+
+        var lastSlotEntity = arch.Entities[arch.Entities.Count - 1];
         arch.RemoveEntityAt(entityIndex.ArchetypeSlotIndex);
-        //TODO: update entityIndex.TableSlotIndex of last
-        arch.Table.FillHoleAt(entityIndex.TableSlotIndex);
+        GetEntityIndex(lastSlotEntity).ArchetypeSlotIndex = entityIndex.ArchetypeSlotIndex;
+
+        var lastTableEntity = arch.Table.Entities[arch.Table.Entities.Count - 1];
+        arch.Table.RemoveAt(entityIndex.TableSlotIndex);
+        GetEntityIndex(lastSlotEntity).TableSlotIndex = entityIndex.TableSlotIndex;
+
 
         entityIndex.Generation = (short)-entityIndex.Generation;
 
@@ -243,7 +250,7 @@ public sealed partial class EcsWorld
         }
     }
 
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private uint GetNextEntityId()
     {
         if (_deadEntities.Count > 0)

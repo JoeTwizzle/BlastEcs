@@ -296,6 +296,11 @@ public sealed partial class EcsWorld
         return newArch;
     }
 
+    /// <summary>
+    /// Moves an entity from one archetype to another
+    /// Moves the last entity in the src archetype to fill hole#
+    /// May move tables if src.Table != dest.Table
+    /// </summary>
     private void MoveEntity(EcsHandle entity, Archetype src, Archetype dest)
     {
         ref var index = ref GetEntityIndex(entity);
@@ -303,15 +308,13 @@ public sealed partial class EcsWorld
         var pair = src.Entities[archIndex];
         if (src.Table != dest.Table)
         {
-            int destTableIndex = dest.Table.Add();
+            int destTableIndex = dest.Table.AddEntity(entity);
             src.Table.CopyComponents(index.TableSlotIndex, dest.Table, destTableIndex, 1);
-            src.Table.FillHoleAt(index.TableSlotIndex);
-            //TODO: Update index.TableSlotIndex of changed entity
+            src.Table.RemoveAt(index.TableSlotIndex);
             index.TableSlotIndex = destTableIndex;
             pair = entity;
         }
         src.RemoveEntityAt(archIndex);
-        //TODO: Update index.ArchetypeSlotIndex of changed entity
         archIndex = dest.AddEntity(pair);
         index.Archetype = dest;
         index.ArchetypeSlotIndex = archIndex;
@@ -322,7 +325,7 @@ public sealed partial class EcsWorld
         var entities = src.Entities.Span;
         if (src.Table != dest.Table)
         {
-            int destTableIndex = dest.Table.AddRange(entities.Length);
+            int destTableIndex = dest.Table.AddEntities(entities);
             src.Table.CopyComponents(0, dest.Table, destTableIndex, src.Entities.Count);
             for (int i = 0; i < entities.Length; i++)
             {

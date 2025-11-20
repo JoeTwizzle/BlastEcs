@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
-public readonly ref struct TypeCollectionKeyNoAlloc
+public readonly ref struct TypeCollectionKeyNoAlloc : IEquatable<TypeCollectionKeyNoAlloc>
 {
     private readonly ref readonly ulong first;
     public readonly int Length;

@@ -11,11 +11,13 @@ namespace BlastEcs;
 /// </summary>
 public sealed class Table : IEquatable<Table>
 {
+    private readonly GrowList<EcsHandle> _entities;
     public TypeCollectionKey Key => _key;
     //public Edges<Table> Edges => _edges;
     public int Count => _count;
     public int Capacity => _capacity;
     public int Id => _id;
+    public GrowList<EcsHandle> Entities => _entities;
 
     internal LongKeyMap<int> TypeIndices => _typeIndices;
 
@@ -29,6 +31,7 @@ public sealed class Table : IEquatable<Table>
 
     internal Table(int id, Type[] componentTypes, TypeCollectionKey key, int initialCapacity = 4)
     {
+        _entities = new();
         _id = id;
         _key = key;
         _componentArrays = new Array[componentTypes.Length];
@@ -42,8 +45,9 @@ public sealed class Table : IEquatable<Table>
         }
     }
 
-    public int Add()
+    internal int AddEntity(EcsHandle entity)
     {
+        _entities.Add(entity);
         if (_count >= _capacity)
         {
             Resize();
@@ -53,37 +57,37 @@ public sealed class Table : IEquatable<Table>
         return index;
     }
 
-    public int AddRange(int amount)
+    internal int AddEntities(ReadOnlySpan<EcsHandle> entities)
     {
-        if (amount <= 0)
-        {
-            ThrowHelper.ThrowArgumentException();
-        }
-        while (_count + amount > _capacity)
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(entities.Length, 0);
+        _entities.AddRange(entities);
+        while (_count + entities.Length > _capacity)
         {
             Resize();
         }
         int index = _count;
-        _count += amount;
+        _count += entities.Length;
         return index;
     }
 
-    public void FillHoleAt(int index)
+    internal void RemoveAt(int index)
     {
         _count--;
+        _entities.RemoveAtDense(index);
         for (int i = 0; i < _componentArrays.Length; i++)
         {
             Array.Copy(_componentArrays[i], _count, _componentArrays[i], index, 1);
         }
     }
 
-    public void RemoveRange(int index, int count)
+    internal void RemoveRange(int index, int count)
     {
         if (count <= 0)
         {
             ThrowHelper.ThrowArgumentException();
         }
         _count -= count;
+        _entities.RemoveRangeDense(index, count);
         for (int i = 0; i < _componentArrays.Length; i++)
         {
             Array.Copy(_componentArrays[i], _count, _componentArrays[i], index, count);
