@@ -143,48 +143,6 @@ public sealed partial class EcsWorld
                 });
             }
         }
-        //if (_componentIndex.TryGetValue(handle.Id, out var compInfo))
-        //{
-        //    RemoveComponentFromArchetypes(handle, compInfo.ContainingArchetypes);
-        //    _componentIndex.Remove(handle.Id);
-        //}
-
-        ////Are there any archetypes which have this component as part of a relationship?
-        //if (handle.IsPair || !_pairTypeMap.TryGetValue(handle.Entity, out var types))
-        //{
-        //    return;
-        //}
-
-        //foreach (var entityB in types)
-        //{
-        //    //This entity is the Kind
-        //    var pairA = GetHandleToPair(GetEntity(handle.Entity), GetEntity(entityB));
-        //    GetArchetypesWith(pairA,, true)
-        //    if (_componentIndex.TryGetValue(pairA.Id, out compInfo))
-        //    {
-        //        RemoveComponentFromArchetypes(pairA, compInfo.ContainingArchetypes);
-        //        _componentIndex.Remove(pairA.Id);
-        //    }
-        //    //This entity is the Target
-        //    var pairB = GetHandleToPair(GetEntity(entityB), GetEntity(handle.Entity));
-        //    if (_componentIndex.TryGetValue(pairB.Id, out compInfo))
-        //    {
-        //        RemoveComponentFromArchetypes(pairB, compInfo.ContainingArchetypes);
-        //        _componentIndex.Remove(pairB.Id);
-        //    }
-        //    //This entity is the Kind
-        //    var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-        //    if (_componentIndex.TryGetValue(indefiniteTarget.Id, out compInfo))
-        //    {
-        //        _componentIndex.Remove(indefiniteTarget.Id);
-        //    }
-        //    //This entity is the Target
-        //    var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-        //    if (_componentIndex.TryGetValue(indefiniteKind.Id, out compInfo))
-        //    {
-        //        _componentIndex.Remove(indefiniteKind.Id);
-        //    }
-        //}
     }
 
     private void RemoveComponentFromArchetype(EcsHandle entity, Archetype archetype)

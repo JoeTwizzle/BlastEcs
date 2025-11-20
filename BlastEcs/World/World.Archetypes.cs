@@ -48,7 +48,7 @@ public sealed partial class EcsWorld
         var arch = new Archetype(id, GetTable(key), key);
         Debug.Assert(_archetypes.Count == id);
         _archetypes.Add(arch);
-
+        
         //TODO: make _componentIndex obsolete / more light weight
         //Idea make it search not store
         //Register presence of components
@@ -358,58 +358,6 @@ public sealed partial class EcsWorld
             target.Value.Add?.Edges.RemoveEdgeRemove(target.Key);
             target.Value.Remove?.Edges.RemoveEdgeAdd(target.Key);
         }
-        arch.Edges.Clear();
-        //var edge = _edges[new IndexedTypeCollectionKeyNoAlloc(arch.Id, arch.Key)];
-
-        //foreach (var keyValue in _edges)
-        //{
-
-        //    keyValue.Value.Add?.Edges.RemoveEdgeRemove(keyValue.Key);
-        //}
-        //var types = arch.Key.Types;
-        //for (int i = 0; i < types.Length; i++)
-        //{
-        //    var handle = new EcsHandle(types[i]);
-        //    //The type is a pair
-        //    ref var info = ref _componentIndex.GetValueRefOrNullRef(handle.Id, out bool exists);
-        //    if (exists)
-        //    {
-        //        //info.ArchetypeMap.Remove(arch.Id);
-        //        info.ContainingArchetypes.Remove(arch.Id);
-        //    }
-
-        //    if (!handle.IsPair)
-        //    {
-        //        continue;
-        //    }
-
-        //    ref HashSet<uint> set = ref _pairTypeMap.GetRefOrNullRef(handle.Entity);
-        //    if (!Unsafe.IsNullRef(ref set))
-        //    {
-        //        set.Remove(handle.Target);
-        //        _pairTypeMap.Remove(handle.Entity);
-        //    }
-
-        //    set = ref _pairTypeMap.GetRefOrNullRef(handle.Target);
-        //    if (!Unsafe.IsNullRef(ref set))
-        //    {
-        //        set.Remove(handle.Entity);
-        //        _pairTypeMap.Remove(handle.Target);
-        //    }
-
-        //    var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-        //    info = ref _componentIndex.GetValueRefOrNullRef(indefiniteTarget.Id, out exists);
-        //    if (exists)
-        //    {
-        //        info.ContainingArchetypes.Remove(arch.Id);
-        //    }
-
-        //    var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-        //    info = ref _componentIndex.GetValueRefOrNullRef(indefiniteKind.Id, out exists);
-        //    if (exists)
-        //    {
-        //        info.ContainingArchetypes.Remove(arch.Id);
-        //    }
-        //}
+        arch.Edges.Clear();     
     }
 }
