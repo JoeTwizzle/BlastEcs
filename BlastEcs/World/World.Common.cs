@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace BlastEcs;
 
-public sealed partial class EcsWorld
+public sealed partial class EcsWorld : IDisposable
 {
     internal const int VariadicCount = 11;
     const int StackallocCount = 12;
@@ -51,5 +51,10 @@ public sealed partial class EcsWorld
         AnyEntity = GetHandleToType<Any>();
         Debug.Assert(AnyEntity.Entity == AnyId);
         s_Worlds[_worldId] = this;
+    }
+
+    public void Dispose()
+    {
+        s_Worlds[_worldId] = null!;
     }
 }

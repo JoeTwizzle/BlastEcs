@@ -37,4 +37,13 @@ void Test()
 	.Without<Paused>()
 	.Build();
 }
+
+void Test()
+{
+	var filter = world.Filter<Position, Velocity>()
+	.WithPair<HomeIn, Nexus3>()
+	.With<ControlledBy>(player1)
+	.Without<Paused>()
+	.Build();
+}
 ```

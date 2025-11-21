@@ -52,54 +52,6 @@ public sealed partial class EcsWorld
         //TODO: make _componentIndex obsolete / more light weight
         //Idea make it search not store
         //Register presence of components
-        var types = key.Types;
-        //for (int i = 0; i < types.Length; i++)
-        //{
-        //    var handle = new EcsHandle(types[i]);
-        //    ref var info = ref _componentIndex.GetValueRefOrAddDefault(handle.Id, out var exists);
-        //    if (!exists)
-        //    {
-        //        info = new();
-        //    }
-        //    //info.ArchetypeMap.Add(id, i);
-        //    info.ContainingArchetypes.Add(id);
-        //    if (handle.IsPair)
-        //    {
-        //        //Add reference for Kind
-        //        ref HashSet<uint> list = ref _pairTypeMap.GetRefOrAddDefault(handle.Entity, out exists);
-        //        if (!exists)
-        //        {
-        //            list = new();
-        //        }
-        //        list.Add(handle.Target);
-
-        //        //Add reference for Target
-        //        list = ref _pairTypeMap.GetRefOrAddDefault(handle.Target, out exists);
-        //        if (!exists)
-        //        {
-        //            list = new();
-        //        }
-        //        list.Add(handle.Entity);
-
-        //        //Add reference for indefinite Kind
-        //        var indefiniteKind = GetRelationWithIndefiniteKind(handle);
-        //        info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteKind.Id, out exists);
-        //        if (!exists)
-        //        {
-        //            info = new();
-        //        }
-        //        info.ContainingArchetypes.Add(id);
-
-        //        //Add reference for indefinite Target
-        //        var indefiniteTarget = GetRelationWithIndefiniteTarget(handle);
-        //        info = ref _componentIndex.GetValueRefOrAddDefault(indefiniteTarget.Id, out exists);
-        //        if (!exists)
-        //        {
-        //            info = new();
-        //        }
-        //        info.ContainingArchetypes.Add(id);
-        //    }
-        //}
         return arch;
     }
 
