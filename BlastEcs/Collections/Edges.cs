@@ -1,4 +1,3 @@
-using BlastEcs.Helpers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BlastEcs.Collections;
@@ -24,7 +23,7 @@ public sealed class Edges<T> where T : class
         {
             if (edge.Add != null)
             {
-                ThrowHelper.ThrowArgumentException("Argument is already present");
+                throw new ArgumentException("Argument is already present");
             }
         }
         edge.Add = item;
@@ -37,7 +36,7 @@ public sealed class Edges<T> where T : class
         {
             if (edge.Remove != null)
             {
-                ThrowHelper.ThrowArgumentException("Argument is already present");
+                throw new ArgumentException("Argument is already present");
             }
         }
         edge.Remove = item;

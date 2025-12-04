@@ -18,6 +18,20 @@ public readonly ref struct TypeCollectionKeyNoAlloc : IEquatable<TypeCollectionK
         Length = types.Length;
     }
 
+    [SkipLocalsInit]
+    public bool HasDuplicates()
+    {
+        var temp = Types;
+        for (int i = 1; i < temp.Length; i++)
+        {
+            if (temp[i - 1] == temp[i])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public override bool Equals(object? obj)
     {
         return obj is TypeCollectionKey key && Equals(key);

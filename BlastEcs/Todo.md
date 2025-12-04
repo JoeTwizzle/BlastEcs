@@ -20,7 +20,7 @@
 	* [ ] functions for a filter
 
 * ## Examples
-```
+```cs
 // Basic filters
 void Test()
 {
@@ -45,5 +45,14 @@ void Test()
 	.With<ControlledBy>(player1)
 	.Without<Paused>()
 	.Build();
+}
+```
+
+```
+// Filter iteration
+foreach (var entity in filter)
+{
+	
+
 }
 ```

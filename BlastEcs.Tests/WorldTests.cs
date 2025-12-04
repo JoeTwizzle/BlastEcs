@@ -84,6 +84,16 @@ internal class WorldTests
     }
 
     [Test]
+    public void WorldAddDuplicateTest()
+    {
+        var e = world.CreateEntity<TestTag>();
+        Assert.That(world.IsAlive(e), Is.True);
+        Assert.That(world.Has<TestTag>(e), Is.True);
+        Assert.Throws<InvalidOperationException>(() => world.Add<TestTag>(e));
+        Assert.That(world.Has<TestTag>(e), Is.True);
+    }
+
+    [Test]
     public void WorldAddManyTestTagTest()
     {
         for (var i = 0; i < 10000; i++)

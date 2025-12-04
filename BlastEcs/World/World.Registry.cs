@@ -1,5 +1,4 @@
 using BlastEcs.Builtin;
-using BlastEcs.Helpers;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
@@ -34,6 +33,7 @@ public sealed partial class EcsWorld
         }
         if (TypeIsTag(type))
         {
+            flags |= EntityFlags.IsTag;
             markerEntity = CreateEntity(_entityArchetype, flags);
         }
         else
@@ -67,7 +67,7 @@ public sealed partial class EcsWorld
     {
         if (type == typeof(Any))
         {
-            ThrowHelper.ThrowArgumentException("The type \"Any\" is only valid for queries");
+            throw new ArgumentException("The type \"Any\" is only valid for queries");
         }
 
         if (_typeRegistry.TryGetValue(type, out var handle))
@@ -88,7 +88,7 @@ public sealed partial class EcsWorld
     {
         if (typeof(T) == typeof(Any))
         {
-            ThrowHelper.ThrowArgumentException("The type \"Any\" is only valid for queries");
+            throw new ArgumentException("The type \"Any\" is only valid for queries");
         }
 
         return GetHandleToType<T>();

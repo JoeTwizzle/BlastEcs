@@ -1,4 +1,3 @@
-using BlastEcs.Helpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -37,8 +36,7 @@ public sealed class LongKeyMap<TValue>
         {
             int i = FindEntry(key);
             if (i >= 0) { return ref _entries[i].Value; }
-            ThrowHelper.ThrowArgumentException("Key is not present in dictionary");
-            return ref Unsafe.NullRef<TValue>();
+            throw new ArgumentException("Key is not present in dictionary");
         }
     }
 
@@ -134,8 +132,7 @@ public sealed class LongKeyMap<TValue>
         {
             if (_entries[i].Key == key)
             {
-                ThrowHelper.ThrowArgumentException("Adding duplicate key");
-                return -1;
+                throw new ArgumentException("Adding duplicate key");
             }
         }
 

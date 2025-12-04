@@ -28,7 +28,7 @@ public sealed partial class EcsWorld
 
         return table;
     }
-    
+
     private Table GetTable(TypeCollectionKeyNoAlloc key)
     {
         if (_tableMap.TryGetValue(key, out int id))

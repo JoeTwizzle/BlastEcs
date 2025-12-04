@@ -48,7 +48,7 @@ public sealed partial class EcsWorld
         var arch = new Archetype(id, GetTable(key), key);
         Debug.Assert(_archetypes.Count == id);
         _archetypes.Add(arch);
-        
+
         //TODO: make _componentIndex obsolete / more light weight
         //Idea make it search not store
         //Register presence of components
@@ -70,6 +70,10 @@ public sealed partial class EcsWorld
         if (_archetypeMap.TryGetValue(key, out var archetypeId))
         {
             return _archetypes[archetypeId];
+        }
+        if (key.HasDuplicates())
+        {
+            throw new InvalidOperationException("An archetype cannot contain duplicate components");
         }
         return CreateArchetype(new(key));
     }
@@ -134,6 +138,23 @@ public sealed partial class EcsWorld
     //    }
     //}
 
+    private Archetype GetArchetypeAdd(Archetype currentArchetype, TypeCollectionKeyNoAlloc addedComponents)
+    {
+        var lookupKey = addedComponents;
+        if (currentArchetype.Edges.TryGetEdgeAdd(lookupKey, out var newArch))
+        {
+            return newArch;
+        }
+        var oldTypes = currentArchetype.Key.Types;
+        Span<ulong> newTypes = [.. oldTypes, .. lookupKey.Types];
+        var newKey = new TypeCollectionKeyNoAlloc(newTypes);
+        newArch = GetOrCreateArchetype(newKey);
+        var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
+        currentArchetype.Edges.AddEdgeAdd(lookupKeyAlloc, newArch);
+        newArch.Edges.AddEdgeRemove(lookupKeyAlloc, currentArchetype);
+        return newArch;
+    }
+
     [Variadic(nameof(T0), VariadicCount)]
     private Archetype GetArchetypeAdd<T0>(Archetype currentArchetype) where T0 : struct
     {
@@ -148,11 +169,17 @@ public sealed partial class EcsWorld
         var oldTypes = currentArchetype.Key.Types;
         // [Variadic: CopyArgs(addedId)]
         Span<ulong> newTypes = [.. oldTypes, addedId_T0];
-        newArch = GetOrCreateArchetype(new TypeCollectionKeyNoAlloc(newTypes));
+        var newKey = new TypeCollectionKeyNoAlloc(newTypes);
+        newArch = GetOrCreateArchetype(newKey);
         var lookupKeyAlloc = new TypeCollectionKey(lookupKey);
         currentArchetype.Edges.AddEdgeAdd(lookupKeyAlloc, newArch);
         newArch.Edges.AddEdgeRemove(lookupKeyAlloc, currentArchetype);
         return newArch;
+    }
+
+    private Archetype GetArchetypeRemove(Archetype currentArchetype, TypeCollectionKeyNoAlloc removedComponents)
+    {
+        return RemoveArchetypeImpl(removedComponents, currentArchetype);
     }
 
     [Variadic(nameof(T0), VariadicCount)]
@@ -310,6 +337,6 @@ public sealed partial class EcsWorld
             target.Value.Add?.Edges.RemoveEdgeRemove(target.Key);
             target.Value.Remove?.Edges.RemoveEdgeAdd(target.Key);
         }
-        arch.Edges.Clear();     
+        arch.Edges.Clear();
     }
 }

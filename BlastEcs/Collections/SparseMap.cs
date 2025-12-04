@@ -1,4 +1,3 @@
-using BlastEcs.Helpers;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs.Collections;
@@ -54,8 +53,7 @@ public sealed class SparseMap<T>
     {
         if ((uint)index >= (uint)_count)
         {
-            ThrowHelper.ThrowArgumentException("Index was out of range.", nameof(index));
-            return;
+            throw new ArgumentException("Index was out of range.", nameof(index));
         }
 
         // Swap with last element
@@ -141,7 +139,7 @@ public sealed class SparseMap<T>
         // Handle capacity overflow
         if (requiredCapacity > int.MaxValue)
         {
-            ThrowHelper.ThrowArgumentException(
+            throw new ArgumentException(
                 $"Required capacity {requiredCapacity} exceeds maximum array size",
                 nameof(requiredCapacity)
             );

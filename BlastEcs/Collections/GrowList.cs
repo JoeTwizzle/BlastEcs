@@ -1,5 +1,3 @@
-using BlastEcs.Helpers;
-
 namespace BlastEcs.Collections;
 
 public sealed class GrowList<T>
@@ -56,7 +54,7 @@ public sealed class GrowList<T>
     {
         if (_count == 0)
         {
-            ThrowHelper.ThrowInvalidOperationException();
+            throw new InvalidOperationException("Cannot remove from an empty GrowList");
         }
         _count--;
         _array[index] = _array[_count];
@@ -78,7 +76,7 @@ public sealed class GrowList<T>
     {
         if (_count == 0)
         {
-            ThrowHelper.ThrowInvalidOperationException();
+            throw new InvalidOperationException("Cannot remove from an empty GrowList");
         }
         _count--;
         if (index < _count)

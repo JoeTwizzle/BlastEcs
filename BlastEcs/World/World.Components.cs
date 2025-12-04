@@ -74,6 +74,13 @@ public sealed partial class EcsWorld
         return ref Unsafe.NullRef<T>();
     }
 
+    public void Add(EcsHandle entity, TypeCollectionKeyNoAlloc key)
+    {
+        var src = GetEntityIndex(entity).Archetype;
+        var dest = GetArchetypeAdd(src, key);
+        MoveEntity(entity, src, dest);
+    }
+
     [Variadic(nameof(T0), VariadicCount)]
     public void Add<T0>(EcsHandle entity) where T0 : struct
     {
@@ -83,11 +90,35 @@ public sealed partial class EcsWorld
     }
 
     [Variadic(nameof(T0), VariadicCount)]
+    public void Add<T0>(EcsHandle entity, T0 data_T0) where T0 : struct
+    {
+        var src = GetEntityIndex(entity).Archetype;
+        var dest = GetArchetypeAdd<T0>(src);
+        MoveEntity(entity, src, dest);
+        // [Variadic: CopyLines()]
+        GetRef<T0>(entity) = data_T0;
+    }
+
+    [Variadic(nameof(T0), VariadicCount)]
     public void Remove<T0>(EcsHandle entity) where T0 : struct
     {
         var src = GetEntityIndex(entity).Archetype;
         var dest = GetArchetypeRemove<T0>(src);
         MoveEntity(entity, src, dest);
+    }
+
+    public void Remove(EcsHandle entity, TypeCollectionKeyNoAlloc removedComponents)
+    {
+        var src = GetEntityIndex(entity).Archetype;
+        var dest = GetArchetypeRemove(src, removedComponents);
+        MoveEntity(entity, src, dest);
+    }
+
+    public void SetValues(EcsHandle entity, Dictionary<ulong, object> componentValues)
+    {
+        ref var entityIndex = ref GetEntityIndex(entity);
+        int tableIndex = entityIndex.TableSlotIndex;
+        entityIndex.Archetype.Table.SetComponentValues(tableIndex, componentValues);
     }
 
     public void AddPair<TKind, TTarget>(EcsHandle entity)

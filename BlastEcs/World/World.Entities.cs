@@ -1,6 +1,5 @@
 using BlastEcs.Builtin;
 using BlastEcs.Collections;
-using BlastEcs.Helpers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -49,6 +48,7 @@ public sealed partial class EcsWorld
         return CreateEntity(archetype, EntityFlags.None);
     }
 
+    //TODO: This is problematic because we may call this from other threads
     private EcsHandle CreateEntity(Archetype archetype, byte flags)
     {
         uint id = GetNextEntityId();
@@ -218,7 +218,7 @@ public sealed partial class EcsWorld
             return ent;
         }
         uint id = ++_entityCount;
-        if (id >= EcsHandle.MaxWorldEntityCount) ThrowHelper.ThrowInvalidOperationException("Maximum number of entities exceded");
+        if (id >= EcsHandle.MaxWorldEntityCount) throw new InvalidOperationException("Maximum number of entities exceded");
         return id;
     }
 
@@ -259,6 +259,7 @@ public sealed partial class EcsWorld
         return CreatePair(kind, target);
     }
 
+    //TODO: This is problematic because we may call this from other threads
     private EcsHandle CreatePair(EcsHandle kind, EcsHandle target)
     {
         EcsHandle markerEntity;

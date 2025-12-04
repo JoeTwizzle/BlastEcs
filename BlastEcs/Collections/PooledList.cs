@@ -1,4 +1,3 @@
-using BlastEcs.Helpers;
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -40,7 +39,7 @@ public sealed class PooledList<T> : IDisposable where T : IEquatable<T>
 #if DEBUG
         if (Items.Contains(item))
         {
-            ThrowHelper.ThrowArgumentException("Cannot add duplicate item to pooled list");
+            throw new ArgumentException("Cannot add duplicate item to pooled list");
         }
 #endif
         if (count >= _items.Length)

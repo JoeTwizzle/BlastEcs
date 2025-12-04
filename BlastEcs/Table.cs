@@ -1,5 +1,4 @@
 using BlastEcs.Collections;
-using BlastEcs.Helpers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -84,7 +83,7 @@ public sealed class Table : IEquatable<Table>
     {
         if (count <= 0)
         {
-            ThrowHelper.ThrowArgumentException();
+            throw new ArgumentException();
         }
         _count -= count;
         _entities.RemoveRangeDense(index, count);
@@ -112,19 +111,38 @@ public sealed class Table : IEquatable<Table>
         }
     }
 
-    internal ref T GetRefAt<T>(int index, ulong handle) where T : struct
+    internal ref T GetRefAt<T>(int tableIndex, ulong handle) where T : struct
     {
         if (_typeIndices.TryGetValue(handle, out int i))
         {
-            return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_componentArrays[i])), index);
+            return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(_componentArrays[i])), tableIndex);
         }
-        ThrowHelper.ThrowArgumentException();
-        return ref Unsafe.NullRef<T>();
+        throw new ArgumentException($"{nameof(handle)} must be a type that is present in the table");
     }
 
     internal T[] GetComponentArray<T>(int componentIndex) where T : struct
     {
         return (T[])_componentArrays[componentIndex];
+    }
+
+    internal Array GetComponentArray(int componentIndex)
+    {
+        return _componentArrays[componentIndex];
+    }
+
+    internal void SetComponentValues(int tableIndex, Dictionary<ulong, object> componentValues)
+    {
+        foreach (var componentValue in componentValues)
+        {
+            if (_typeIndices.TryGetValue(componentValue.Key, out int i))
+            {
+                _componentArrays[i].SetValue(componentValue.Value, tableIndex);
+            }
+            else
+            {
+                throw new ArgumentException($"{nameof(componentValues)} must only contain types that are present in the table");
+            }
+        }
     }
 
     internal ref T GetRawRefAt<T>(int entityIndex, int componentIndex) where T : struct

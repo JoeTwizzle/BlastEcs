@@ -1,4 +1,3 @@
-using BlastEcs.Helpers;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs.Collections;
@@ -40,8 +39,7 @@ public sealed class TypeCollectionMap<TValue>
         {
             int i = FindEntry(key);
             if (i >= 0) { return ref _entries[i].Value; }
-            ThrowHelper.ThrowArgumentException("Key is not present in dictionary");
-            return ref Unsafe.NullRef<TValue>();
+            throw new ArgumentException("Key is not present in dictionary");
         }
     }
 
@@ -137,8 +135,7 @@ public sealed class TypeCollectionMap<TValue>
         {
             if (key == _entries[i].Key)
             {
-                ThrowHelper.ThrowArgumentException("Adding duplicate key");
-                return -1;
+                throw new ArgumentException("Adding duplicate key");
             }
         }
 

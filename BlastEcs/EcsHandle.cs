@@ -60,6 +60,10 @@ public readonly partial struct EcsHandle
     /// </summary>
     public bool IsPair => (Flags & EntityFlags.IsPair) != 0;
     /// <summary>
+    /// Whether the current handle is a tag (Stores no component data)
+    /// </summary>
+    public bool IsTag => (Flags & EntityFlags.IsTag) != 0;
+    /// <summary>
     /// Whether the current handle forces the pair to act as a tag when used in a relation
     /// </summary>
     public bool IsTagRelation => (Flags & EntityFlags.IsTagRelation) != 0;

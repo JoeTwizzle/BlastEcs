@@ -531,7 +531,7 @@ public sealed partial class EcsWorld
     //                        bool uncertainTarget = term.Dest.HasValue;
     //                        if (uncertainSource && uncertainTarget)
     //                        {
-    //                            ThrowHelper.ThrowArgumentException("Only single uncertain term supported atm.");
+    //                            throw new ArgumentException("Only single uncertain term supported atm.");
     //                        }
     //                        else if (uncertainTarget)
     //                        {
@@ -608,7 +608,7 @@ public sealed partial class EcsWorld
     //                //then gather the archetypes that match these terms
     //                if (node.ComplexTerms[i].Dest != null && node.ComplexTerms[i].Src != null)
     //                {
-    //                    ThrowHelper.ThrowArgumentException("Only single uncertain term supported atm.");
+    //                    throw new ArgumentException("Only single uncertain term supported atm.");
     //                }
     //                else if (node.ComplexTerms[i].Dest != null)
     //                {
@@ -639,7 +639,7 @@ public sealed partial class EcsWorld
     //                    bitItem ^= bitItem & -bitItem;
     //                    if (uncertainSource && uncertainTarget)
     //                    {
-    //                        ThrowHelper.ThrowArgumentException("Only single uncertain term supported atm.");
+    //                        throw new ArgumentException("Only single uncertain term supported atm.");
     //                    }
     //                    else if (uncertainTarget)
     //                    {
