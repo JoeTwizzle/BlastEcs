@@ -48,7 +48,7 @@ public sealed partial class EcsWorld
         return CreateEntity(archetype, EntityFlags.None);
     }
 
-    //TODO: This is problematic because we may call this from other threads
+    //TODO: This is problematic because we may call this while iterating all entities in the archetype
     private EcsHandle CreateEntity(Archetype archetype, byte flags)
     {
         uint id = GetNextEntityId();
@@ -67,6 +67,7 @@ public sealed partial class EcsWorld
         return entity;
     }
 
+    //TODO: This is problematic because we may call this while iterating all entities in the archetype
     private EcsHandle CreatePair(EcsHandle kind, EcsHandle target, Archetype archetype)
     {
         var handle = new EcsHandle(kind, target);
@@ -259,7 +260,6 @@ public sealed partial class EcsWorld
         return CreatePair(kind, target);
     }
 
-    //TODO: This is problematic because we may call this from other threads
     private EcsHandle CreatePair(EcsHandle kind, EcsHandle target)
     {
         EcsHandle markerEntity;
@@ -268,12 +268,12 @@ public sealed partial class EcsWorld
         {
             markerEntity = CreatePair(kind, target, _entityArchetype);
         }
-        else if (HandleIsComponent(kind))
+        else if (!kind.IsTag)
         {
             markerEntity = CreatePair(kind, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(kind);
         }
-        else if (HandleIsComponent(target))
+        else if (!target.IsTag)
         {
             markerEntity = CreatePair(kind, target, _componentArchetype);
             GetRef<EcsComponent>(markerEntity) = GetRef<EcsComponent>(target);
