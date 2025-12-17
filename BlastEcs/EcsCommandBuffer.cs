@@ -171,7 +171,6 @@ public sealed partial class EcsCommandBuffer
         if (!handlesAdded.Remove(idT0)) { handlesRemoved.Add(idT0); } else { componentValuesSet.Remove(idT0); }
     }
 
-    [SkipLocalsInit]
     public void Execute()
     {
         if (_isRecording) throw new InvalidOperationException("Recording must be stopped before a command buffer may be executed");

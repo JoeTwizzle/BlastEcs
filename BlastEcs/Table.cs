@@ -17,9 +17,10 @@ public sealed class Table : IEquatable<Table>
     public int Capacity => _capacity;
     public int Id => _id;
     public GrowList<EcsHandle> Entities => _entities;
+    public bool IsLocked => _lockCount != 0;
+    private int _lockCount;
 
     internal LongKeyMap<int> TypeIndices => _typeIndices;
-
     private readonly int _id;
     private readonly TypeCollectionKey _key;
     private readonly Array[] _componentArrays;
@@ -159,6 +160,16 @@ public sealed class Table : IEquatable<Table>
             _componentArrays[i].CopyTo(newArr, 0);
             _componentArrays[i] = newArr;
         }
+    }
+
+    public void Lock()
+    {
+        _lockCount++;
+    }
+
+    public void Unlock()
+    {
+        _lockCount--;
     }
 
     public bool Equals(Table? other)

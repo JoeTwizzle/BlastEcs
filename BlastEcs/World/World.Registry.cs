@@ -6,7 +6,6 @@ namespace BlastEcs;
 public sealed partial class EcsWorld
 {
     private readonly Dictionary<RuntimeTypeHandle, EcsHandle> _typeRegistry;
-
     private bool HandleIsComponent(EcsHandle entity)
     {
         return GetEntityIndex(entity).Archetype.Has(_componentHandle);

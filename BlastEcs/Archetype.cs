@@ -11,6 +11,9 @@ public sealed class Archetype : IEquatable<Archetype>
     public int Id => _id;
     public Table Table => _table;
     public Edges<Archetype> Edges => _edges;
+    public bool IsLocked => _lockCount != 0;
+    private int _lockCount;
+
     //Index of an entity in a table's component arrays
     public GrowList<EcsHandle> Entities => _entities;
 
@@ -51,6 +54,17 @@ public sealed class Archetype : IEquatable<Archetype>
     {
         return Key.HasType(componentType);
     }
+
+    public void Lock()
+    {
+        _lockCount++;
+    }
+
+    public void Unlock()
+    {
+        _lockCount--;
+    }
+
 
     public bool Equals(Archetype? other)
     {

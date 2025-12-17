@@ -52,17 +52,25 @@ public sealed partial class EcsWorld
     private EcsHandle CreateEntity(Archetype archetype, byte flags)
     {
         uint id = GetNextEntityId();
-
         ref EntityIndex entityIndex = ref GetEntityIndex(id);
         entityIndex.Archetype = archetype;
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         entityIndex.Flags = flags;
         var entity = new EcsHandle(id, gen, _worldId, flags);
-        entityIndex.TableSlotIndex = archetype.Table.AddEntity(entity);
-        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity);
-        if (EntityEventsEnabled)
+        if (archetype.IsLocked || archetype.Table.IsLocked)
         {
-            OnEntityCreated?.Invoke(entity);
+            entityIndex.TableSlotIndex = -1;
+            entityIndex.ArchetypeSlotIndex = -1;
+            //TODO: Make entities functional after Unlock() is called
+        }
+        else
+        {
+            entityIndex.TableSlotIndex = archetype.Table.AddEntity(entity);
+            entityIndex.ArchetypeSlotIndex = archetype.AddEntity(entity);
+            if (EntityEventsEnabled)
+            {
+                OnEntityCreated?.Invoke(entity);
+            }
         }
         return entity;
     }
@@ -74,8 +82,17 @@ public sealed partial class EcsWorld
         ref EntityIndex entityIndex = ref GetEntityIndex(handle);
         entityIndex.Archetype = archetype;
         entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        entityIndex.TableSlotIndex = archetype.Table.AddEntity(handle);
-        entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle);
+        if (archetype.IsLocked || archetype.Table.IsLocked)
+        {
+            entityIndex.TableSlotIndex = -1;
+            entityIndex.ArchetypeSlotIndex = -1;
+            //TODO: Make entities functional after Unlock() is called
+        }
+        else
+        {
+            entityIndex.TableSlotIndex = archetype.Table.AddEntity(handle);
+            entityIndex.ArchetypeSlotIndex = archetype.AddEntity(handle);
+        }
         return handle;
     }
 
@@ -93,7 +110,6 @@ public sealed partial class EcsWorld
         var lastTableEntity = arch.Table.Entities[arch.Table.Entities.Count - 1];
         arch.Table.RemoveAt(entityIndex.TableSlotIndex);
         GetEntityIndex(lastSlotEntity).TableSlotIndex = entityIndex.TableSlotIndex;
-
 
         entityIndex.Generation = (short)-entityIndex.Generation;
 
@@ -154,6 +170,7 @@ public sealed partial class EcsWorld
         DestroyArchetype(oldArch);
     }
 
+    //TODO: Unused?
     private void RemoveComponentFromArchetypes(EcsHandle entity, QuickMask archetypes)
     {
         foreach (var ids in archetypes)
@@ -164,7 +181,7 @@ public sealed partial class EcsWorld
             DestroyArchetype(oldArch);
         }
     }
-
+    //TODO: Unused?
     private void RemoveComponentFromArchetypes(EcsHandle component, ReadOnlySpan<ulong> archetypesMask)
     {
         for (int idx = 0; idx < archetypesMask.Length; idx++)

@@ -220,8 +220,8 @@ public sealed partial class EcsWorld
             };
             _nodes = [new()];
         }
-        //modifiers
 
+        //modifiers
         internal FilterBuilder Self()
         {
             var term = _nodes[currentSource].Terms[^1];
