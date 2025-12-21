@@ -21,11 +21,13 @@ public sealed class Archetype : IEquatable<Archetype>
     private readonly Table _table;
     private readonly int _id;
     private readonly GrowList<EcsHandle> _entities;
+    internal readonly GrowList<EcsHandle> _queuedEntities;
 
     public Archetype(int id, Table table, TypeCollectionKey key)
     {
         Key = key;
-        _edges = new();
+        _edges = new(); 
+        _queuedEntities = new();
         _table = table;
         _id = id;
         _entities = new();

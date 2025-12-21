@@ -1,6 +1,7 @@
 using BlastEcs.Builtin;
 using BlastEcs.Collections;
 using System.Numerics;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
@@ -61,7 +62,7 @@ public sealed partial class EcsWorld
         {
             entityIndex.TableSlotIndex = -1;
             entityIndex.ArchetypeSlotIndex = -1;
-            //TODO: Make entities functional after Unlock() is called
+            archetype._queuedEntities.Add(entity);
         }
         else
         {
@@ -86,7 +87,7 @@ public sealed partial class EcsWorld
         {
             entityIndex.TableSlotIndex = -1;
             entityIndex.ArchetypeSlotIndex = -1;
-            //TODO: Make entities functional after Unlock() is called
+            archetype._queuedEntities.Add(handle);
         }
         else
         {
@@ -107,7 +108,7 @@ public sealed partial class EcsWorld
         arch.RemoveEntityAt(entityIndex.ArchetypeSlotIndex);
         GetEntityIndex(lastSlotEntity).ArchetypeSlotIndex = entityIndex.ArchetypeSlotIndex;
 
-        var lastTableEntity = arch.Table.Entities[arch.Table.Entities.Count - 1];
+        var lastTableEntity = arch.Table.Entities[arch.Table.Entities.Length - 1];
         arch.Table.RemoveAt(entityIndex.TableSlotIndex);
         GetEntityIndex(lastSlotEntity).TableSlotIndex = entityIndex.TableSlotIndex;
 

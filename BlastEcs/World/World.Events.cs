@@ -6,8 +6,9 @@ public sealed partial class EcsWorld
     public event Action<EcsHandle>? OnEntityCreated;
     public bool EntityEventsEnabled { get; set; }
 
-    public void Subscribe<T0>()
-    {
+    //TODO:component events?
+    //public void Subscribe<T0>()
+    //{
 
-    }
+    //}
 }

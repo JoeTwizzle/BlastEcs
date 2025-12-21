@@ -1,57 +1,96 @@
-﻿//using BlastEcs.Collections;
-//using System;
-//using System.Collections.Generic;
-//using System.Diagnostics;
-//using System.Linq;
-//using System.Runtime.InteropServices;
-//using System.Text;
-//using System.Threading.Tasks;
+﻿using BlastEcs.Builtin;
+using BlastEcs.Collections;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
-//namespace BlastEcs;
+namespace BlastEcs;
 
+public sealed partial class FilterBuilder
+{
+    private readonly EcsWorld _world;
+    private readonly HashSet<ulong> _with;
+    private readonly HashSet<ulong> _without;
 
+    public FilterBuilder(EcsWorld world)
+    {
+        _world = world;
+        _with = [];
+        _without = [];
+    }
 
-//public sealed class Filter
-//{
-//    struct FilterSource
-//    {
-//        public readonly ulong[] IncludedIds;
-//        public readonly ulong[] ExcludedIds;
-//    }
-//    EcsWorld world;
-//    FilterSource[] filterSources;
-//    struct FilterLink
-//    {
-//        public readonly ulong PartialLinkId;
-//        public readonly bool IsFullyPartial;
-//        public readonly bool IsKindPartial;
-//    }
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Inc<T0>() where T0 : struct
+    {
+        // [Variadic: CopyLines()]
+        _with.Add(_world.GetHandleToType<T0>().Id);
+    }
 
-//    public Filter()
-//    {
-//        world.
-//    }
+    public void Inc(EcsHandle kind, EcsHandle target)
+    {
+        _with.Add(new EcsHandle(kind, target).Id);
+    }
 
-//    public Iterator GetEnumerator()
-//    {
-//        return new Iterator();
-//    }
+    public void Inc<TKind>(EcsHandle target) where TKind : struct
+    {
+        _with.Add(new EcsHandle(_world.GetHandleToType<TKind>(), target).Id);
+    }
 
-//    public struct Iterator
-//    {
-//        public Iterator()
-//        {
-//            world.
-//        }
+    public void IncRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
+    {
+        Inc<TKind>(_world.GetHandleToType<TTarget>());
+    }
 
-//        public EcsHandle Current => ;
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Exc<T0>() where T0 : struct
+    {
+        // [Variadic: CopyLines()]
+        _without.Add(_world.GetHandleToType<T0>().Id);
+    }
 
-//        public bool MoveNext()
-//        {
+    public void Exc(EcsHandle kind, EcsHandle target)
+    {
+        _without.Add(new EcsHandle(kind, target).Id);
+    }
 
-//        }
-//    }
-//}
+    public void Exc<TKind>(EcsHandle target) where TKind : struct
+    {
+        _without.Add(new EcsHandle(_world.GetHandleToType<TKind>(), target).Id);
+    }
+
+    public void ExcRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
+    {
+        Exc<TKind>(_world.GetHandleToType<TTarget>());
+    }
+
+    public Filter Build()
+    {
+        return new Filter(_world, new([.. _with]), new([.. _without]));
+    }
+}
+
+public sealed class Filter
+{
+    public readonly EcsWorld World;
+    public readonly TypeCollectionKey Inc;
+    public readonly TypeCollectionKey Exc;
+
+    public Filter(EcsWorld ecsWorld, TypeCollectionKey inc, TypeCollectionKey exc)
+    {
+        World = ecsWorld;
+        Inc = inc;
+        Exc = exc;
+    }
+
+    public void Each(Action<EcsHandle> action)
+    {
+        World.InvokeFilter(this, action);
+    }
+}
 
 
 //public class Query

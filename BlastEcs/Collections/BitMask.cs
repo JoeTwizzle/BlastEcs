@@ -133,7 +133,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
     {
         ResizeIfNeeded(QuickMask.QuickRangeLength);
         TensorPrimitives.BitwiseOr(Bits, mask.QuickBits, _bits);
-        foreach (var index in mask.Mask)
+        foreach (var index in mask.Mask!)
         {
             int bitIndex = index >>> 6;
             ResizeIfNeeded(bitIndex);
@@ -185,7 +185,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         Span<ulong> extendedMask = stackalloc ulong[extendedEnd - extendedStart];
         extendedMask.Clear();
 
-        foreach (var key in mask.Mask)
+        foreach (var key in mask.Mask!)
         {
             int chunkIndex = key >>> 6;
             if (chunkIndex >= extendedStart && chunkIndex < extendedEnd)
@@ -227,7 +227,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
             }
         }
 
-        foreach (int bitIndex in mask.Mask)
+        foreach (int bitIndex in mask.Mask!)
         {
             int wordIndex = bitIndex / 64;
             if (wordIndex < _count)

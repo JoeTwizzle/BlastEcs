@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace BlastEcs.Builtin;
 
 
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 /// <summary>
 ///     Tags a method or type as being variadic; i.e. generating many versions with any number of generic parameters.
 /// </summary>
@@ -22,7 +21,6 @@ namespace BlastEcs.Builtin;
 ///     </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Delegate | AttributeTargets.Interface)]
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 internal sealed class VariadicAttribute : Attribute
 {
     /// <summary>

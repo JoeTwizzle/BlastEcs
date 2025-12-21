@@ -85,6 +85,11 @@ public sealed class GrowList<T>
         }
     }
 
+    public void Clear()
+    {
+        _array.AsSpan().Clear();
+    }
+
     public ref T this[int index]
     {
         get

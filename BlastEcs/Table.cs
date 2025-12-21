@@ -12,12 +12,12 @@ public sealed class Table : IEquatable<Table>
 {
     private readonly GrowList<EcsHandle> _entities;
     public TypeCollectionKey Key => _key;
-    //public Edges<Table> Edges => _edges;
     public int Count => _count;
     public int Capacity => _capacity;
     public int Id => _id;
-    public GrowList<EcsHandle> Entities => _entities;
+    public ReadOnlySpan<EcsHandle> Entities => _entities.Span;
     public bool IsLocked => _lockCount != 0;
+    internal readonly GrowList<int> _archetypes;
     private int _lockCount;
 
     internal LongKeyMap<int> TypeIndices => _typeIndices;
@@ -25,13 +25,13 @@ public sealed class Table : IEquatable<Table>
     private readonly TypeCollectionKey _key;
     private readonly Array[] _componentArrays;
     private readonly LongKeyMap<int> _typeIndices;
-    //private readonly Edges<Table> _edges;
     private int _count;
     private int _capacity;
 
     internal Table(int id, Type[] componentTypes, TypeCollectionKey key, int initialCapacity = 4)
     {
-        _entities = new();
+        _entities = new(); 
+        _archetypes = new();
         _id = id;
         _key = key;
         _componentArrays = new Array[componentTypes.Length];
@@ -84,7 +84,7 @@ public sealed class Table : IEquatable<Table>
     {
         if (count <= 0)
         {
-            throw new ArgumentException();
+            throw new ArgumentException($"Parameter {nameof(count)} must be greater than zero");
         }
         _count -= count;
         _entities.RemoveRangeDense(index, count);

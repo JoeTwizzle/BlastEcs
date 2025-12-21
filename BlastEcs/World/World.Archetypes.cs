@@ -14,18 +14,6 @@ public sealed partial class EcsWorld
     private readonly TypeCollectionMap<int> _archetypeMap;
     private readonly List<Archetype> _archetypes;
     private readonly GrowList<int> _deadArchetypes;
-    /// <summary>
-    /// For every entity which is used as a type in an Archetype
-    /// Write id of the archetype that contains it
-    /// Store ArchetypeId mapped to indices
-    /// </summary>
-    //private readonly LongKeyMap<ComponentIndexInfo> _componentIndex;
-    /// <summary>
-    /// For every pair which is used as a type in an Archetype
-    /// Write an entry for Kind, containing Target
-    /// Write an entry for Target, containing Kind
-    /// </summary>
-    //private readonly Dictionary<uint, HashSet<uint>> _pairTypeMap;
     private readonly Archetype _entityArchetype;
     private readonly Archetype _componentArchetype;
 
@@ -46,12 +34,10 @@ public sealed partial class EcsWorld
         _archetypeMap.Add(key, id);
 
         var arch = new Archetype(id, GetTable(key), key);
+        arch.Table._archetypes.Add(id);
         Debug.Assert(_archetypes.Count == id);
         _archetypes.Add(arch);
 
-        //TODO: make _componentIndex obsolete / more light weight
-        //Idea make it search not store
-        //Register presence of components
         return arch;
     }
 
@@ -77,66 +63,6 @@ public sealed partial class EcsWorld
         }
         return CreateArchetype(new(key));
     }
-
-    //public void GetArchetypesWith(TypeCollectionKeyNoAlloc key, BitMask validArchetypes, bool init)
-    //{
-    //    for (int i = 0; i < key.Length; i++)
-    //    {
-    //        var handle = new EcsHandle(key[i]);
-    //        var archetypes = _componentIndex[handle.Id];
-    //        if (i == 0 && init)
-    //        {
-    //            validArchetypes.OrBits(archetypes.ContainingArchetypes);
-    //        }
-    //        else
-    //        {
-    //            validArchetypes.AndBits(archetypes.ContainingArchetypes);
-    //        }
-    //    }
-    //}
-
-    //public void GetArchetypesWith(EcsHandle handle, BitMask validArchetypes, bool init)
-    //{
-    //    var archetypes = _componentIndex[handle.Id];
-    //    if (init)
-    //    {
-    //        validArchetypes.OrBits(archetypes.ContainingArchetypes);
-    //    }
-    //    else
-    //    {
-    //        validArchetypes.AndBits(archetypes.ContainingArchetypes);
-    //    }
-    //}
-
-    //internal void GetArchetypesWith(Term term, BitMask validArchetypes, bool init)
-    //{
-    //    var archetypes = _componentIndex[term.Match.Id];
-    //    if (init)
-    //    {
-    //        validArchetypes.OrBits(archetypes.ContainingArchetypes);
-    //    }
-    //    else
-    //    {
-    //        if (term.Exclude)
-    //        {
-    //            validArchetypes.ClearBits(archetypes.ContainingArchetypes);
-    //        }
-    //        else
-    //        {
-    //            validArchetypes.AndBits(archetypes.ContainingArchetypes);
-    //        }
-    //    }
-    //}
-
-    //public void FilterArchetypesWithout(TypeCollectionKeyNoAlloc key, BitMask validArchetypes)
-    //{
-    //    for (int i = 0; i < key.Length; i++)
-    //    {
-    //        var handle = new EcsHandle(key[i]);
-    //        var archetypes = _componentIndex[handle.Id];
-    //        validArchetypes.ClearBits(archetypes.ContainingArchetypes);
-    //    }
-    //}
 
     private Archetype GetArchetypeAdd(Archetype currentArchetype, TypeCollectionKeyNoAlloc addedComponents)
     {
@@ -332,6 +258,7 @@ public sealed partial class EcsWorld
         _archetypeMap.Remove(arch.Key);
         _archetypes.RemoveAt(arch.Id);
         _deadArchetypes.Add(arch.Id);
+        arch.Table._archetypes.RemoveAtDense(arch.Id);
         foreach (var target in arch.Edges)
         {
             target.Value.Add?.Edges.RemoveEdgeRemove(target.Key);

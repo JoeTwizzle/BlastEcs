@@ -72,94 +72,94 @@ internal readonly struct Term
     }
 };
 
-struct TAarm
-{
-    EcsHandle Match;
-    EcsHandle RelationshipToTraverse;
-    int KindSource;
-    int TargetSource;
-    OperationTarget OperationTarget;
+//struct TAarm
+//{
+//    EcsHandle Match;
+//    EcsHandle RelationshipToTraverse;
+//    int KindSource;
+//    int TargetSource;
+//    OperationTarget OperationTarget;
 
 
 
-    //Traversing Up/Self with DFS X
-    //For archetype in validSet:
-    //  Self = archetype
-    //  Self has Match -> Exit
-    //  Self has not (Kind, *) -> Reject
-    //  Push(Self)
-    //  While(stack > 0):
-    //    targets = Self(Kind, *)
-    //    For target in targets:
-    //      archetype = arch(target)
-    //      Self = archetype
-    //      Self has Match -> Exit
-    //      Self has not (Kind, *) -> Self = Pop(Self); Continue;
-    //      Push(Self)
+//    //Traversing Up/Self with DFS X
+//    //For archetype in validSet:
+//    //  Self = archetype
+//    //  Self has Match -> Exit
+//    //  Self has not (Kind, *) -> Reject
+//    //  Push(Self)
+//    //  While(stack > 0):
+//    //    targets = Self(Kind, *)
+//    //    For target in targets:
+//    //      archetype = arch(target)
+//    //      Self = archetype
+//    //      Self has Match -> Exit
+//    //      Self has not (Kind, *) -> Self = Pop(Self); Continue;
+//    //      Push(Self)
 
-    //Traversing Up/Self with BFS O
-    //For archetype in validSet:
-    //Traverse(ref State, archetype):
-    //    Self = archetype
-    //    Self has Match/In named Set -> Exit
-    //    Self has not (Kind, *) -> Reject
-    //    Push(Self)
-    //    While(stack > 0):
-    //      targets = Self(Kind, *)
-    //      For target in targets:
-    //        archetype = arch(target)
-    //        archetype has Match/In named Set -> Exit
-    //        archetype has not (Kind, *) -> Continue;
-    //        Push(archetype)
-    //      Self = Pop()
+//    //Traversing Up/Self with BFS O
+//    //For archetype in validSet:
+//    //Traverse(ref State, archetype):
+//    //    Self = archetype
+//    //    Self has Match/In named Set -> Exit
+//    //    Self has not (Kind, *) -> Reject
+//    //    Push(Self)
+//    //    While(stack > 0):
+//    //      targets = Self(Kind, *)
+//    //      For target in targets:
+//    //        archetype = arch(target)
+//    //        archetype has Match/In named Set -> Exit
+//    //        archetype has not (Kind, *) -> Continue;
+//    //        Push(archetype)
+//    //      Self = Pop()
 
-    //Traversing Down/Self with BFS O
-    //For archetype in validSet:
-    //Traverse(ref State, archetype):
-    //  Self = archetype
-    //  Self has Match -> Exit
-    //  While(stack > 0):
-    //      For entity in Self:
-    //          archetypes with (Kind, entity) do not exist -> continue;
-    //          For archetype with (Kind, entity):
-    //              archetype has Match/In named Set -> Exit
-    //              Push(archetype)
-    //      Self = Pop()
+//    //Traversing Down/Self with BFS O
+//    //For archetype in validSet:
+//    //Traverse(ref State, archetype):
+//    //  Self = archetype
+//    //  Self has Match -> Exit
+//    //  While(stack > 0):
+//    //      For entity in Self:
+//    //          archetypes with (Kind, entity) do not exist -> continue;
+//    //          For archetype with (Kind, entity):
+//    //              archetype has Match/In named Set -> Exit
+//    //              Push(archetype)
+//    //      Self = Pop()
 
-    //Matching multiple Source terms X
-    //Init():
-    //  For source in Sources:
-    //      validSets[source] = GetValidSet(source)
-    //StartMatch():
-    //  validSet = validSets[this]
-    //  state.targetSets[this] = validSet
-    //  StartMatch(this, validSet)
-    //  For empty in state.targetSets:
-    //      
-    //StartMatch(Source, validSet, ref state):
-    //  For archetype,i in validSet:
-    //      state.activeMembers[Source] = i
-    //      For complexTerm in Source:
-    //          state.targetSets[complexTerm.TargetSource] ??= new(); clear(); //archetypes targeted by this relation
-    //          For target in archetype(complexTerm.match):
-    //              t = arch(target)
-    //              state.targetSets[complexTerm.TargetSource].set(t.id) //Set archetypes targeted by this relation for this archetype
-    //          state.targetSets[complexTerm.TargetSource].and(validSets[complexTerm.TargetSource]) //mask to only include valid archetypes by component filter
-    //          If state.targetSets[complexTerm.TargetSource] is empty: return complexTerm.TargetSource //return error value
-    //          If !validSets[complexTerm.TargetSource].IsSet(state.activeMembers[complexTerm.TargetSource]): return complexTerm.TargetSource
-    //          Mismatch = StartMatch(complexTerm.TargetSource, targetSet, ref state)
-    //          If mismatch not none AND mismatch != source: return Mismatch //Short circuit 
-    //          If mismatch == source: validset.clear(i); Goto next; //mark as invalid and go to next valid archetype 
-    //      For set,j in state.targetSets where empty:
-    //          set = state.targetSets[j] = validSets[j].copy();
-    //          Mismatch = StartMatch(j, set, ref state);
-    //          If mismatch not none AND mismatch != source: return Mismatch //Short circuit 
-    //      message=""
-    //      For active,j in state.activeMembers.Length:
-    //          message += "Source "+ j + ": " + active;
-    //      CW(Message)
-    //      next:
-}
+//    //Matching multiple Source terms X
+//    //Init():
+//    //  For source in Sources:
+//    //      validSets[source] = GetValidSet(source)
+//    //StartMatch():
+//    //  validSet = validSets[this]
+//    //  state.targetSets[this] = validSet
+//    //  StartMatch(this, validSet)
+//    //  For empty in state.targetSets:
+//    //      
+//    //StartMatch(Source, validSet, ref state):
+//    //  For archetype,i in validSet:
+//    //      state.activeMembers[Source] = i
+//    //      For complexTerm in Source:
+//    //          state.targetSets[complexTerm.TargetSource] ??= new(); clear(); //archetypes targeted by this relation
+//    //          For target in archetype(complexTerm.match):
+//    //              t = arch(target)
+//    //              state.targetSets[complexTerm.TargetSource].set(t.id) //Set archetypes targeted by this relation for this archetype
+//    //          state.targetSets[complexTerm.TargetSource].and(validSets[complexTerm.TargetSource]) //mask to only include valid archetypes by component filter
+//    //          If state.targetSets[complexTerm.TargetSource] is empty: return complexTerm.TargetSource //return error value
+//    //          If !validSets[complexTerm.TargetSource].IsSet(state.activeMembers[complexTerm.TargetSource]): return complexTerm.TargetSource
+//    //          Mismatch = StartMatch(complexTerm.TargetSource, targetSet, ref state)
+//    //          If mismatch not none AND mismatch != source: return Mismatch //Short circuit 
+//    //          If mismatch == source: validset.clear(i); Goto next; //mark as invalid and go to next valid archetype 
+//    //      For set,j in state.targetSets where empty:
+//    //          set = state.targetSets[j] = validSets[j].copy();
+//    //          Mismatch = StartMatch(j, set, ref state);
+//    //          If mismatch not none AND mismatch != source: return Mismatch //Short circuit 
+//    //      message=""
+//    //      For active,j in state.activeMembers.Length:
+//    //          message += "Source "+ j + ": " + active;
+//    //      CW(Message)
+//    //      next:
+//}
 
 internal enum OperationTarget
 {
