@@ -7,6 +7,6 @@
   <Project Path="BlastEcs.Benchmarks/BlastEcs.Benchmarks.csproj" />
   <Project Path="BlastEcs.Example/BlastEcs.Example.csproj" />
   <Project Path="BlastEcs.SourceGen/BlastEcs.SourceGen.csproj" />
-  <Project Path="BlastEcs.Tests/BlastEcs.Tests.csproj" />
+  <Project Path="BlastEcs.Tests/BlastEcs.Tests.csproj" Id="7055bbda-fa4d-4c05-8569-4188e2f217c5" />
   <Project Path="BlastEcs/BlastEcs.csproj" />
 </Solution>

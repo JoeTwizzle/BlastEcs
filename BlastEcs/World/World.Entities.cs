@@ -16,7 +16,7 @@ public sealed partial class EcsWorld
     [MethodImpl(MethodImplOptions.NoInlining)]
     public EcsHandle CreateEntity()
     {
-        return CreateEntity(_entityArchetype);
+        return CreateEntity(_emptyArchetype);
     }
 
     [Variadic(nameof(T0), VariadicCount)]
@@ -113,7 +113,7 @@ public sealed partial class EcsWorld
         GetEntityIndex(lastSlotEntity).TableSlotIndex = entityIndex.TableSlotIndex;
 
         entityIndex.Generation = (short)-entityIndex.Generation;
-
+        entityIndex.Archetype = _emptyArchetype;
         //Recycle id if entity is not a pair
         if (!entity.IsPair)
         {
@@ -284,7 +284,7 @@ public sealed partial class EcsWorld
 
         if (kind.IsTagRelation || (!HandleIsComponent(kind) && !HandleIsComponent(target)))
         {
-            markerEntity = CreatePair(kind, target, _entityArchetype);
+            markerEntity = CreatePair(kind, target, _emptyArchetype);
         }
         else if (!kind.IsTag)
         {

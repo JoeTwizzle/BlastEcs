@@ -14,7 +14,7 @@ public sealed partial class EcsWorld
     private readonly TypeCollectionMap<int> _archetypeMap;
     private readonly List<Archetype> _archetypes;
     private readonly GrowList<int> _deadArchetypes;
-    private readonly Archetype _entityArchetype;
+    private readonly Archetype _emptyArchetype;
     private readonly Archetype _componentArchetype;
 
     private int GetArchetypeId()
@@ -124,8 +124,11 @@ public sealed partial class EcsWorld
         {
             return newArch;
         }
-
         var oldTypes = currentArchetype.Key.Types;
+        if (lookupKey.Length > oldTypes.Length)
+        {
+            throw new InvalidOperationException("Cannot remove component/s from archtype. No such component present.");
+        }
         Span<ulong> newTypes = stackalloc ulong[oldTypes.Length - lookupKey.Length];
         var removedTypes = lookupKey.Types;
         int count = 0;
@@ -142,6 +145,10 @@ public sealed partial class EcsWorld
             {
                 newTypes[count++] = oldTypes[i];
             }
+        }
+        if(count == oldTypes.Length)
+        {
+            throw new InvalidOperationException("Cannot remove component/s from archtype. No such component present.");
         }
         var newKey = new TypeCollectionKeyNoAlloc(newTypes);
         newArch = GetOrCreateArchetype(newKey);

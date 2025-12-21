@@ -184,12 +184,12 @@ internal struct Node
 }
 public sealed partial class EcsWorld
 {
-    public FilterBuilder CreateFilter()
+    public QueryBuilder CreateQuery()
     {
-        return new FilterBuilder(this);
+        return new QueryBuilder(this);
     }
 
-    public sealed class FilterBuilder
+    public sealed class QueryBuilder
     {
         sealed class SourceNode
         {
@@ -208,7 +208,7 @@ public sealed partial class EcsWorld
         readonly Dictionary<string, int> _targetMap;
         readonly List<SourceNode> _nodes;
 
-        public FilterBuilder(EcsWorld world)
+        public QueryBuilder(EcsWorld world)
         {
             _world = world;
             _targets = 1;
@@ -222,7 +222,7 @@ public sealed partial class EcsWorld
         }
 
         //modifiers
-        internal FilterBuilder Self()
+        internal QueryBuilder Self()
         {
             var term = _nodes[currentSource].Terms[^1];
             _nodes[currentSource].Terms[^1] = new Term(term, term.Target | OperationTarget.Self);
@@ -230,7 +230,7 @@ public sealed partial class EcsWorld
         }
 
         //Anonymous up traversal
-        internal FilterBuilder Up<TReletion>() where TReletion : struct
+        internal QueryBuilder Up<TReletion>() where TReletion : struct
         {
             var term = _nodes[currentSource].Terms[^1];
             _nodes[currentSource].Terms[^1] = new Term(term, _world.GetHandleToType<TReletion>(), term.Target | OperationTarget.Up);
@@ -238,12 +238,12 @@ public sealed partial class EcsWorld
         }
 
         //Named up traversal
-        internal FilterBuilder Up<TRelation>(string targetSource) where TRelation : struct
+        internal QueryBuilder Up<TRelation>(string targetSource) where TRelation : struct
         {
             return Up(_world.GetHandleToType<TRelation>(), targetSource);
         }
 
-        internal FilterBuilder Up(EcsHandle relationKind, string targetSource)
+        internal QueryBuilder Up(EcsHandle relationKind, string targetSource)
         {
             RegisterIndefiniteTargetRelation(relationKind, targetSource);
             var term = _nodes[currentSource].Terms[^1];
@@ -292,102 +292,102 @@ public sealed partial class EcsWorld
         }
 
         //With
-        public FilterBuilder With<T0>() where T0 : struct
+        public QueryBuilder With<T0>() where T0 : struct
         {
             RegisterSimple<T0>();
             return this;
         }
 
         //Pairs
-        public FilterBuilder With<TKind, TTarget>() where TKind : struct where TTarget : struct
+        public QueryBuilder With<TKind, TTarget>() where TKind : struct where TTarget : struct
         {
             return With(_world.GetHandleToType<TKind>(), _world.GetHandleToType<TTarget>());
         }
 
-        public FilterBuilder With<TKind>(EcsHandle target) where TKind : struct
+        public QueryBuilder With<TKind>(EcsHandle target) where TKind : struct
         {
             return With(_world.GetHandleToType<TKind>(), target);
         }
 
-        public FilterBuilder With(EcsHandle kind, EcsHandle target)
+        public QueryBuilder With(EcsHandle kind, EcsHandle target)
         {
             RegisterRelation(kind, target);
             return this;
         }
 
         //Open pairs
-        public FilterBuilder With<TKind>(string id) where TKind : struct
+        public QueryBuilder With<TKind>(string id) where TKind : struct
         {
             return With(_world.GetHandleToType<TKind>(), id);
         }
 
-        public FilterBuilder With(EcsHandle kind, string id)
+        public QueryBuilder With(EcsHandle kind, string id)
         {
             RegisterIndefiniteTargetRelation(kind, id);
             return this;
         }
 
-        public FilterBuilder With(string id, EcsHandle target)
+        public QueryBuilder With(string id, EcsHandle target)
         {
             RegisterIndefiniteKindRelation(id, target);
             return this;
         }
 
-        public FilterBuilder With(string id, string id2)
+        public QueryBuilder With(string id, string id2)
         {
             RegisterIndefinitePair(id, id2);
             return this;
         }
 
         //Without
-        public FilterBuilder Without<T0>() where T0 : struct
+        public QueryBuilder Without<T0>() where T0 : struct
         {
             RegisterSimple<T0>(true);
             return this;
         }
 
         //Pairs
-        public FilterBuilder Without<TKind, TTarget>() where TKind : struct where TTarget : struct
+        public QueryBuilder Without<TKind, TTarget>() where TKind : struct where TTarget : struct
         {
             return Without(_world.GetHandleToType<TKind>(), _world.GetHandleToType<TTarget>());
         }
 
-        public FilterBuilder Without<TKind>(EcsHandle target) where TKind : struct
+        public QueryBuilder Without<TKind>(EcsHandle target) where TKind : struct
         {
             return Without(_world.GetHandleToType<TKind>(), target);
         }
 
-        public FilterBuilder Without(EcsHandle kind, EcsHandle target)
+        public QueryBuilder Without(EcsHandle kind, EcsHandle target)
         {
             RegisterRelation(kind, target, true);
             return this;
         }
 
-        public FilterBuilder Without(EcsHandle kind, string id)
+        public QueryBuilder Without(EcsHandle kind, string id)
         {
             RegisterIndefiniteTargetRelation(kind, id, true);
             return this;
         }
 
-        public FilterBuilder Without(string id, EcsHandle target)
+        public QueryBuilder Without(string id, EcsHandle target)
         {
             RegisterIndefiniteKindRelation(id, target, true);
             return this;
         }
 
-        public FilterBuilder Without(string id, string id2)
+        public QueryBuilder Without(string id, string id2)
         {
             RegisterIndefinitePair(id, id2, true);
             return this;
         }
 
-        public FilterBuilder ResetSource()
+        public QueryBuilder ResetSource()
         {
             currentSource = defaultSourceId;
             return this;
         }
 
-        public FilterBuilder SetSource(string target)
+        public QueryBuilder SetSource(string target)
         {
             currentSource = GetOrRegisterIdentifier(target);
             return this;

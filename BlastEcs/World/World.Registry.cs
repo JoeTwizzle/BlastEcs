@@ -33,7 +33,7 @@ public sealed partial class EcsWorld
         if (TypeIsTag(type))
         {
             flags |= EntityFlags.IsTag;
-            markerEntity = CreateEntity(_entityArchetype, flags);
+            markerEntity = CreateEntity(_emptyArchetype, flags);
         }
         else
         {

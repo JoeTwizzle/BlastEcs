@@ -56,8 +56,10 @@ public readonly struct TypeCollectionKey
     [SkipLocalsInit]
     public bool Contains(TypeCollectionKeyNoAlloc other)
     {
-        if (_types.Length > other.Length)
+        if (_types.Length < other.Length)
+        {
             return false;
+        }
 
         var otherTypes = other.Types;
         Span<ulong> maskedItems = [.. _types];

@@ -14,8 +14,8 @@ namespace BlastEcs
             {
                 var archetype = _archetypes[i];
 
-                if (!archetype.Key.Contains(filter.Inc) || 
-                    archetype.Key.Contains(filter.Exc)) 
+                if ((filter.Inc.Types.Length > 0 && !archetype.Key.Contains(filter.Inc)) ||
+                    (filter.Exc.Types.Length > 0 && archetype.Key.Contains(filter.Exc)))
                     continue;
 
                 //Invoke callback for all entities in archetype

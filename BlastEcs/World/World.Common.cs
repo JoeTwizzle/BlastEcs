@@ -28,7 +28,7 @@ public sealed partial class EcsWorld : IDisposable
         _deadArchetypes = new();
         //Reserve first index for empty entity
         _emptyEntity = new EcsHandle(0, 0, _worldId);
-        _entityArchetype = CreateArchetype(new([]));
+        _emptyArchetype = CreateArchetype(new([]));
         //We need to manually register this component as we otherwise have a circular dependency
         uint componentEntityId = GetNextEntityId();
         ref EntityIndex entityIndex = ref GetEntityIndex(componentEntityId);
