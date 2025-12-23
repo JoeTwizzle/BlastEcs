@@ -1,4 +1,5 @@
 using BlastEcs.Builtin;
+using BlastEcs.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -6,6 +7,8 @@ namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
+    Dictionary<ulong, BitMask> _componentIndex = new(); 
+
     [Variadic(nameof(T0), VariadicCount)]
     public bool Has<T0>(EcsHandle entity) where T0 : struct
     {

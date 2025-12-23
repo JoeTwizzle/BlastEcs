@@ -54,6 +54,12 @@ public readonly partial struct EcsHandle
     }
 
     [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Add<T0>(T0 value_T0) where T0 : struct
+    {
+        World.Add(this, value_T0);
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
     public void Remove<T0>() where T0 : struct
     {
         World.Remove<T0>(this);

@@ -10,6 +10,7 @@ namespace BlastEcs.SourceGen;
 /// <summary>
 ///     The <see cref="VariadicGenerator"/> finds assembly members with <see cref="BlastEcs.Builtin.VariadicAttribute"/>, and generates variadic types.
 ///     See the attribute's documentation for information on usage.
+///     Originally taken from https://github.com/genaray/Arch/pull/166 credit: LilithSilver
 /// </summary>
 [Generator]
 public class VariadicGenerator : IIncrementalGenerator

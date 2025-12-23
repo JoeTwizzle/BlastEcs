@@ -85,10 +85,15 @@ public sealed class Filter
         Inc = inc;
         Exc = exc;
     }
-
+    //TODO: Benchmark
     public void Each(Action<EcsHandle> action)
     {
         World.InvokeFilter(this, action);
+    }
+
+    public void Each2(Action<EcsHandle> action)
+    {
+        World.InvokeFilter2(this, action);
     }
 }
 

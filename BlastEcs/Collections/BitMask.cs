@@ -7,6 +7,7 @@ namespace BlastEcs.Collections;
 //TODO: Replace many operations with tensorprimitives class
 public sealed class BitMask : IEquatable<BitMask>, IDisposable
 {
+    private readonly bool _defaultValue;
     private ulong[] _bits;
     private int _count;
 
@@ -18,19 +19,21 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         }
     }
 
-    public BitMask()
+    public BitMask(bool defaultValue)
     {
+        _defaultValue = defaultValue;
         _bits = ArrayPool<ulong>.Shared.Rent(1);
-        Array.Clear(_bits);
+        Array.Fill(_bits, _defaultValue ? 0xFFFF_FFFF_FFFF_FFFFul : 0ul);
         _count = 1;
     }
 
-    public BitMask(BitMask componentMask)
+    public BitMask(BitMask componentMask, bool defaultValue)
     {
+        _defaultValue = defaultValue;
         _bits = ArrayPool<ulong>.Shared.Rent(componentMask._count);
         componentMask.Bits.CopyTo(_bits);
         _count = componentMask._count;
-        _bits.AsSpan(_count, _bits.Length - _count).Clear();
+        _bits.AsSpan(_count, _bits.Length - _count).Fill(_defaultValue ? 0xFFFF_FFFF_FFFF_FFFFul : 0ul);
     }
 
     public bool IsAllZeros()
@@ -62,13 +65,27 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         _bits[bitIndex] |= (1uL << remainder);
     }
 
+    public void SetBits(ReadOnlySpan<int> indices)
+    {
+        var maxIndex = TensorPrimitives.Max(indices);
+        ResizeIfNeeded(maxIndex >>> 6);
+        for (int i = 0; i < indices.Length; i++)
+        {
+            int index = indices[i];
+            int chunkIndex = index >>> 6;
+            int bit = index & 63;
+
+            _bits[chunkIndex] |= (1ul << bit);
+        }
+    }
+
     public void ClearBit(int index)
     {
         int bitIndex = index >>> 6;
         int remainder = index & (63);
         if (_count > bitIndex)
         {
-            _bits[bitIndex] &= ~(1uL << remainder);
+            _bits[bitIndex] &= ~(1ul << remainder);
         }
     }
 
@@ -203,11 +220,19 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         }
     }
 
+    /// <summary>
+    /// Performs bitwise AND with bits in the <paramref name="mask"/>
+    /// </summary>
+    /// <param name="mask">Mask to perform the operation against.</param>
     public void AndBits(BitMask mask)
     {
         TensorPrimitives.BitwiseAnd(Bits, mask.Bits, _bits);
     }
 
+    /// <summary>
+    /// Performs bitwise AND with bits in the <paramref name="mask"/>
+    /// </summary>
+    /// <param name="mask">Mask to perform the operation against.</param>
     public void AndBits(ReadOnlySpan<ulong> mask)
     {
         TensorPrimitives.BitwiseAnd(Bits, mask, _bits);
@@ -238,16 +263,48 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         }
     }
 
-    public void ClearBits(BitMask mask)
+    public void ClearBitsAfterIndex(int index)
     {
-        ResizeIfNeeded(mask._count);
-        for (int i = 0; i < mask._count; i++)
+        int chunkIndex = index >>> 6; // divide by 64
+        ResizeIfNeeded(chunkIndex);
+
+        int bit = index & 63;
+
+        // Mask to keep bits [0..bit], clear [bit+1..63]
+        ulong mask = (bit == 63)
+            ? ulong.MaxValue
+            : ((1ul << (bit + 1)) - 1);
+
+        _bits[chunkIndex] &= mask;
+
+        for (int i = chunkIndex + 1; i < _bits.Length; i++)
         {
-            _bits[i] &= ~mask._bits[i];
+            _bits[i] = 0ul;
         }
     }
 
+    /// <summary>
+    /// Sets bits in this mask to 0 if it is set to 1 in <paramref name="mask"/>
+    /// </summary>
+    /// <param name="mask">Mask to perform the operation against.</param>
+    public void ClearBits(BitMask mask)
+    {
+        ResizeIfNeeded(mask._count);
 
+        Span<ulong> masked = stackalloc ulong[_count];
+        TensorPrimitives.BitwiseAnd(Bits, mask.Bits, masked);
+        TensorPrimitives.Subtract(Bits, masked, _bits);
+        //for (int i = 0; i < mask._count; i++)
+        //{
+        //    _bits[i] &= ~mask._bits[i];
+        //}
+    }
+
+    /// <summary>
+    /// Sets bits in this mask to 0 if it is set to 1 in <paramref name="mask"/> AND <paramref name="filter"/>
+    /// </summary>
+    /// <param name="mask">Mask to perform the operation against.</param>
+    /// <param name="filter">Filter for the bits of the <paramref name="mask"/></param>
     public void ClearMatchingBits(BitMask mask, BitMask filter)
     {
         for (int i = 0; i < _count; i++)
@@ -285,7 +342,7 @@ public sealed class BitMask : IEquatable<BitMask>, IDisposable
         _bits = ArrayPool<ulong>.Shared.Rent(index + 1);
         oldBits.AsSpan(0, _count).CopyTo(_bits.AsSpan(0, _count));
         ArrayPool<ulong>.Shared.Return(oldBits);
-        _bits.AsSpan(_count, _bits.Length - _count).Clear();
+        _bits.AsSpan(_count, _bits.Length - _count).Fill(_defaultValue ? 0xFFFF_FFFF_FFFF_FFFFul : 0ul);
     }
 
     /// <summary>

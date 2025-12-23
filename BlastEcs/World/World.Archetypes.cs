@@ -1,6 +1,8 @@
 using BlastEcs.Builtin;
 using BlastEcs.Collections;
+using BlastEcs.Utils;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace BlastEcs;
 
@@ -12,7 +14,7 @@ public sealed partial class EcsWorld
     /// Maps a type key to an archetype id
     /// </summary>
     private readonly TypeCollectionMap<int> _archetypeMap;
-    private readonly List<Archetype> _archetypes;
+    private readonly SparseSet<Archetype> _archetypes;
     private readonly GrowList<int> _deadArchetypes;
     private readonly Archetype _emptyArchetype;
     private readonly Archetype _componentArchetype;
@@ -33,10 +35,21 @@ public sealed partial class EcsWorld
         int id = GetArchetypeId();
         _archetypeMap.Add(key, id);
 
+        var types = key.Types;
+        for (int i = 0; i < types.Length; i++)
+        {
+            ref var set = ref _componentIndex.GetRefOrAddDefault(types[i], out var exists);
+            if (!exists)
+            {
+                set = new BitMask(false);
+            }
+            set.SetBit(id);
+        }
+
         var arch = new Archetype(id, GetTable(key), key);
         arch.Table._archetypes.Add(id);
         Debug.Assert(_archetypes.Count == id);
-        _archetypes.Add(arch);
+        _archetypes.Add(arch.Id, arch);
 
         return arch;
     }
@@ -146,7 +159,7 @@ public sealed partial class EcsWorld
                 newTypes[count++] = oldTypes[i];
             }
         }
-        if(count == oldTypes.Length)
+        if (count == oldTypes.Length)
         {
             throw new InvalidOperationException("Cannot remove component/s from archtype. No such component present.");
         }
@@ -263,8 +276,19 @@ public sealed partial class EcsWorld
     private void DestroyArchetype(Archetype arch)
     {
         _archetypeMap.Remove(arch.Key);
-        _archetypes.RemoveAt(arch.Id);
+        _archetypes.Remove(arch.Id);
         _deadArchetypes.Add(arch.Id);
+
+        var types = arch.Key.Types;
+        for (int i = 0; i < types.Length; i++)
+        {
+            ref var set = ref _componentIndex.GetRefOrNullRef(types[i]);
+            if (!Unsafe.IsNullRef(ref set))
+            {
+                set.ClearBit(arch.Id);
+            }
+        }
+
         arch.Table._archetypes.RemoveAtDense(arch.Id);
         foreach (var target in arch.Edges)
         {

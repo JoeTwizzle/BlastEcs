@@ -1,116 +1,112 @@
+using System.Numerics;
+
 namespace BlastEcs.Collections;
 
-public sealed class SparseSet
+public sealed class SparseSet<T>
 {
-    private int[] _sparse;   // Maps key to index in _dense; -1 = not present
-    private uint[] _dense;    // Contains keys in insertion order
-    private int _count;      // Number of elements
+    private int[] _sparse;
+    private int[] _denseKeys;
+    private T[] _denseValues;
 
-    public SparseSet(int initialSparseCapacity = 16, int initialDenseCapacity = 4)
-    {
-        _sparse = new int[initialSparseCapacity];
-        Array.Fill(_sparse, -1);
-        _dense = new uint[initialDenseCapacity];
-        _count = 0;
-    }
+    private int _count;
 
     public int Count => _count;
+    public int Capacity => _sparse.Length;
 
-    public void Add(uint key)
+    public SparseSet(int capacity = 16)
     {
-        EnsureSparseCapacity(key + 1);
-        ref int index = ref _sparse[key];
-        if (index != -1)
-            return;  // Key already exists
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
-        EnsureDenseCapacity();
-        index = _count;
-        _dense[_count] = key;
-        _count++;
+        _sparse = new int[capacity];
+        _denseKeys = new int[capacity];
+        _denseValues = new T[capacity];
     }
 
-    public bool Remove(uint key)
+    public bool Contains(int key)
     {
-        if (key >= (uint)_sparse.Length)
+        if ((uint)key >= (uint)_sparse.Length)
+        {
             return false;
+        }
 
-        ref int index = ref _sparse[key];
-        if (index == -1)
+        int index = _sparse[key];
+        return index < _count && _denseKeys[index] == key;
+    }
+
+    public ref T Get(int key)
+    {
+        return ref _denseValues[_sparse[key]];
+    }
+
+    public ref T this[int key]
+    {
+        get => ref _denseValues[_sparse[key]];
+    }
+
+    public void Add(int key, T value)
+    {
+        EnsureCapacity(key + 1);
+
+        int index = _sparse[key];
+
+        if (index < _count && _denseKeys[index] == key)
+        {
+            _denseValues[index] = value;
+            return;
+        }
+
+        int denseIndex = _count++;
+
+        _sparse[key] = denseIndex;
+        _denseKeys[denseIndex] = key;
+        _denseValues[denseIndex] = value;
+    }
+
+    public bool Remove(int key)
+    {
+        if ((uint)key >= (uint)_sparse.Length)
+        {
             return false;
+        }
 
-        RemoveAt(index);
+        int index = _sparse[key];
+
+        if (index >= _count || _denseKeys[index] != key)
+        {
+            return false;
+        }
+
+        int lastIndex = --_count;
+        int lastKey = _denseKeys[lastIndex];
+
+        _denseKeys[index] = lastKey;
+        _denseValues[index] = _denseValues[lastIndex];
+        _sparse[lastKey] = index;
+
         return true;
     }
 
-    public void RemoveAt(int index)
+    public void Clear()
     {
-        if ((uint)index >= (uint)_count)
-        {
-            throw new ArgumentException("Index was out of range.", nameof(index));
-        }
-
-        // Swap with last element
-        uint lastKey = _dense[_count - 1];
-        uint removedKey = _dense[index];
-
-        _dense[index] = lastKey;
-
-        // Update sparse for swapped key
-        _sparse[lastKey] = index;
-        _sparse[removedKey] = -1;
-
-        _count--;
+        DenseValues.Clear();
+        _count = 0;
     }
 
-    public bool Contains(uint key) =>
-        key < (uint)_sparse.Length && _sparse[key] != -1;
+    public Span<T> DenseValues => new(_denseValues, 0, _count);
 
-    public uint GetKeyAt(int index) => _dense[index];
+    public ReadOnlySpan<int> DenseKeys => new(_denseKeys, 0, _count);
 
-    public ReadOnlySpan<uint> GetDense() => new ReadOnlySpan<uint>(_dense, 0, _count);
-
-    private void EnsureSparseCapacity(uint requiredCapacity)
+    private void EnsureCapacity(int requiredKeyCapacity)
     {
-        uint currentLength = (uint)_sparse.Length;
-        if (requiredCapacity <= currentLength)
-            return;
-
-        // Handle capacity overflow
-        if (requiredCapacity > int.MaxValue)
-        {
-            throw new ArgumentException(
-                $"Required capacity {requiredCapacity} exceeds maximum array size",
-                nameof(requiredCapacity)
-            );
-        }
-
-        int newCapacity = Math.Max((int)requiredCapacity, DoubledCapacity(currentLength));
-        int[] newSparse = new int[newCapacity];
-        Array.Copy(_sparse, newSparse, _sparse.Length);
-        Array.Fill(newSparse, -1, _sparse.Length, newCapacity - _sparse.Length);
-        _sparse = newSparse;
-    }
-
-    private static int DoubledCapacity(uint currentLength)
-    {
-        if (currentLength <= int.MaxValue / 2)
-        {
-            return (int)currentLength * 2;
-        }
-        else
-        {
-            return int.MaxValue;
-        }
-    }
-
-    private void EnsureDenseCapacity()
-    {
-        if (_count < _dense.Length)
+        if (requiredKeyCapacity <= _sparse.Length)
         {
             return;
         }
 
-        int newCapacity = _dense.Length == 0 ? 4 : _dense.Length * 2;
-        Array.Resize(ref _dense, newCapacity);
+        int newCapacity = (int)BitOperations.RoundUpToPowerOf2((uint)requiredKeyCapacity);
+
+        Array.Resize(ref _sparse, newCapacity);
+        Array.Resize(ref _denseKeys, newCapacity);
+        Array.Resize(ref _denseValues, newCapacity);
     }
 }

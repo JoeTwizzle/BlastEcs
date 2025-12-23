@@ -13,8 +13,9 @@ public sealed partial class EcsWorld : IDisposable
     internal const int AnyId = 2;
     public EcsHandle AnyEntity { get; }
     internal readonly EcsHandle _componentHandle;
-    public EcsWorld(int anticipatedEntityCount = 16384)
+    public EcsWorld(int anticipatedEntityCount = 4196)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(anticipatedEntityCount, nameof(anticipatedEntityCount));
         _worldId = s_worldCounter++;
         _entities = new((ulong)anticipatedEntityCount);
         _archetypes = new();
@@ -23,8 +24,7 @@ public sealed partial class EcsWorld : IDisposable
         _archetypeMap = new();
         _tableMap = new();
         _typeRegistry = [];
-        //_pairTypeMap = new();
-        //_componentIndex = new();
+        _componentIndex = [];
         _deadArchetypes = new();
         //Reserve first index for empty entity
         _emptyEntity = new EcsHandle(0, 0, _worldId);

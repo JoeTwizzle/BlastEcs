@@ -4,30 +4,52 @@ using System.Runtime.InteropServices;
 
 namespace BlastEcs;
 
-public readonly struct VirtualEntity : IEquatable<VirtualEntity>
+public readonly partial struct VirtualEntity : IEquatable<VirtualEntity>
 {
-    public readonly int Id;
+    public readonly EcsCommandBuffer cmd;
     public readonly ulong RealHandle;
+    public readonly int Id;
     public readonly int Count;
     public bool IsReal => RealHandle != 0;
 
-    public VirtualEntity(int id)
+    public VirtualEntity(EcsCommandBuffer cmd, int id)
     {
+        this.cmd = cmd;
         Id = id;
         Count = 1;
     }
 
-    public VirtualEntity(int id, int count)
+    public VirtualEntity(EcsCommandBuffer cmd, int id, int count)
     {
+        this.cmd = cmd;
         Id = id;
         Count = count;
     }
 
-    public VirtualEntity(int id, ulong realHandle)
+    public VirtualEntity(EcsCommandBuffer cmd, int id, ulong realHandle)
     {
+        this.cmd = cmd;
         RealHandle = realHandle;
         Id = id;
         Count = 1;
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Add<T0>() where T0 : struct
+    {
+        cmd.Add<T0>(this);
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Add<T0>(T0 data_T0) where T0 : struct
+    {
+        cmd.Add(this, data_T0);
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public void Remove<T0>() where T0 : struct
+    { 
+        cmd.Remove<T0>(this);
     }
 
     public override bool Equals(object? obj)
@@ -56,15 +78,15 @@ public readonly struct VirtualEntity : IEquatable<VirtualEntity>
     }
 }
 
-readonly struct CommandBufferRecord
+internal readonly struct CommandBufferRecord
 {
-    public readonly HashSet<ulong> handlesRemoved;
-    public readonly HashSet<ulong> handlesAdded;
+    public readonly HashSet<ulong> HandlesRemoved;
+    public readonly HashSet<ulong> HandlesAdded;
     public readonly Dictionary<ulong, object> ComponentValuesSet;
     public CommandBufferRecord()
     {
-        handlesAdded = [];
-        handlesRemoved = [];
+        HandlesAdded = [];
+        HandlesRemoved = [];
         ComponentValuesSet = [];
     }
 }
@@ -111,19 +133,45 @@ public sealed partial class EcsCommandBuffer
         }
     }
 
+    public VirtualEntity Create()
+    {
+        return Create(1);
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public VirtualEntity Create<T0>() where T0 : struct
+    {
+        return Create<T0>(1);
+    }
+
     public VirtualEntity Create(int count)
     {
         ValidateRecording();
-        var ent = new VirtualEntity(_records.Count, count);
+        var ent = new VirtualEntity(this, _records.Count, count);
         _entities.Add(ent);
         _records.Add(new CommandBufferRecord());
+        return ent;
+    }
+
+    [Variadic(nameof(T0), EcsWorld.VariadicCount)]
+    public VirtualEntity Create<T0>(int count) where T0 : struct
+    {
+        ValidateRecording();
+        var ent = new VirtualEntity(this, _records.Count, count);
+        _entities.Add(ent);
+        _records.Add(new CommandBufferRecord());
+        var handlesAdded = _records[ent.Id].HandlesAdded;
+        // [Variadic: CopyLines()]
+        var idT0 = _ecsWorld.GetHandleToInstantiableType<T0>().Id;
+        // [Variadic: CopyLines()]
+        handlesAdded.Add(idT0);
         return ent;
     }
 
     public VirtualEntity Create(EcsHandle entity)
     {
         ValidateRecording();
-        var ent = new VirtualEntity(_records.Count, entity.Id);
+        var ent = new VirtualEntity(this, _records.Count, entity.Id);
         _entities.Add(ent);
         _records.Add(new CommandBufferRecord());
         return ent;
@@ -133,9 +181,9 @@ public sealed partial class EcsCommandBuffer
     public void Add<T0>(VirtualEntity entity) where T0 : struct
     {
         ValidateRecording();
-        var handlesAdded = _records[entity.Id].handlesAdded;
+        var handlesAdded = _records[entity.Id].HandlesAdded;
         var componentValuesSet = _records[entity.Id].ComponentValuesSet;
-        var handlesRemoved = _records[entity.Id].handlesRemoved;
+        var handlesRemoved = _records[entity.Id].HandlesRemoved;
         // [Variadic: CopyLines()]
         var idT0 = _ecsWorld.GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyLines()]
@@ -146,9 +194,9 @@ public sealed partial class EcsCommandBuffer
     public void Add<T0>(VirtualEntity entity, T0 data_T0) where T0 : struct
     {
         ValidateRecording();
-        var handlesAdded = _records[entity.Id].handlesAdded;
+        var handlesAdded = _records[entity.Id].HandlesAdded;
         var componentValuesSet = _records[entity.Id].ComponentValuesSet;
-        var handlesRemoved = _records[entity.Id].handlesRemoved;
+        var handlesRemoved = _records[entity.Id].HandlesRemoved;
 
         // [Variadic: CopyLines()]
         var idT0 = _ecsWorld.GetHandleToInstantiableType<T0>().Id;
@@ -162,9 +210,9 @@ public sealed partial class EcsCommandBuffer
     public void Remove<T0>(VirtualEntity entity) where T0 : struct
     {
         ValidateRecording();
-        var handlesAdded = _records[entity.Id].handlesAdded;
+        var handlesAdded = _records[entity.Id].HandlesAdded;
         var componentValuesSet = _records[entity.Id].ComponentValuesSet;
-        var handlesRemoved = _records[entity.Id].handlesRemoved;
+        var handlesRemoved = _records[entity.Id].HandlesRemoved;
         // [Variadic: CopyLines()]
         var idT0 = _ecsWorld.GetHandleToInstantiableType<T0>().Id;
         // [Variadic: CopyLines()]
@@ -189,15 +237,19 @@ public sealed partial class EcsCommandBuffer
             if (virtualEntity.IsReal) //We are dealing with an entity that already exists
             {
                 entity = new EcsHandle(virtualEntity.RealHandle);
-                _ecsWorld.Remove(entity, new TypeCollectionKeyNoAlloc([.. record.handlesRemoved]));
-                _ecsWorld.Add(entity, new TypeCollectionKeyNoAlloc([.. record.handlesAdded]));
+                _ecsWorld.Remove(entity, new TypeCollectionKeyNoAlloc([.. record.HandlesRemoved]));
+                _ecsWorld.Add(entity, new TypeCollectionKeyNoAlloc([.. record.HandlesAdded]));
+                _ecsWorld.SetValues(entity, record.ComponentValuesSet);
             }
             else //We are dealing with a new entity 
             {
-                if (record.handlesRemoved.Count != 0) throw new InvalidOperationException("Cannot remove non existant component from entity");
-                entity = _ecsWorld.CreateEntity(new TypeCollectionKeyNoAlloc([.. record.handlesAdded]));
+                if (record.HandlesRemoved.Count != 0) throw new InvalidOperationException("Cannot remove non existant component from entity");
+                for (int c = 0; c < virtualEntity.Count; c++)
+                {
+                    entity = _ecsWorld.CreateEntity(new TypeCollectionKeyNoAlloc([.. record.HandlesAdded]));
+                    _ecsWorld.SetValues(entity, record.ComponentValuesSet);
+                }
             }
-            _ecsWorld.SetValues(entity, record.ComponentValuesSet);
         }
     }
 }

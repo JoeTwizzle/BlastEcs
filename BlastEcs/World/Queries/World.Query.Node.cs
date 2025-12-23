@@ -63,7 +63,7 @@ public sealed partial class EcsWorld
         {
             for (int i = 0; i < _sources.Length; i++)
             {
-                var validSet = new BitMask();
+                var validSet = new BitMask(false);
                 if (_sources[i].WithKey.Types.Length == 0 && _sources[i].WithoutKey.Types.Length == 0)
                 {
                     validSet.SetRange(0, _world._archetypes.Count);
@@ -127,7 +127,7 @@ public sealed partial class EcsWorld
                         if (complexTerm.TargetSource != null)
                         {
 
-                            BitMask targetMask = _state.TargetSets[complexTerm.TargetSource.Value] ??= new();
+                            BitMask targetMask = _state.TargetSets[complexTerm.TargetSource.Value] ??= new(false);
                             targetMask.ClearAll();
 
                             archetype.Key.ForeachTarget(complexTerm.Match, (target) =>
@@ -186,7 +186,7 @@ public sealed partial class EcsWorld
                         {
                             continue;
                         }
-                        set = new(_potentiallyValidSets[j]);
+                        set = new(_potentiallyValidSets[j], false);
                         var mismatch = StartMatch(j, set);
                         if (mismatch.HasValue && mismatch.Value == sourceId)
                         {
