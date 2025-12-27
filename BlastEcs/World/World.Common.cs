@@ -9,14 +9,14 @@ public sealed partial class EcsWorld : IDisposable
     const int StackallocCount = 12;
     private static byte s_worldCounter;
     internal static EcsWorld[] s_Worlds = new EcsWorld[256];
-    private readonly byte _worldId;
+    public readonly byte WorldId;
     internal const int AnyId = 2;
     public EcsHandle AnyEntity { get; }
     internal readonly EcsHandle _componentHandle;
     public EcsWorld(int anticipatedEntityCount = 4196)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(anticipatedEntityCount, nameof(anticipatedEntityCount));
-        _worldId = s_worldCounter++;
+        WorldId = s_worldCounter++;
         _entities = new((ulong)anticipatedEntityCount);
         _archetypes = new();
         _tables = new();
@@ -27,13 +27,13 @@ public sealed partial class EcsWorld : IDisposable
         _componentIndex = [];
         _deadArchetypes = new();
         //Reserve first index for empty entity
-        _emptyEntity = new EcsHandle(0, 0, _worldId);
+        _emptyEntity = new EcsHandle(0, 0, WorldId);
         _emptyArchetype = CreateArchetype(new([]));
         //We need to manually register this component as we otherwise have a circular dependency
         uint componentEntityId = GetNextEntityId();
         ref EntityIndex entityIndex = ref GetEntityIndex(componentEntityId);
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
-        var componentEntity = _componentHandle = new EcsHandle(componentEntityId, gen, _worldId);
+        var componentEntity = _componentHandle = new EcsHandle(componentEntityId, gen, WorldId);
         _typeRegistry.Add(typeof(EcsComponent).TypeHandle, componentEntity);
 
         //The table for the archetype also needs to be created
@@ -50,11 +50,11 @@ public sealed partial class EcsWorld : IDisposable
         //Register "Any" Special type
         AnyEntity = GetHandleToType<Any>();
         Debug.Assert(AnyEntity.Entity == AnyId);
-        s_Worlds[_worldId] = this;
+        s_Worlds[WorldId] = this;
     }
 
     public void Dispose()
     {
-        s_Worlds[_worldId] = null!;
+        s_Worlds[WorldId] = null!;
     }
 }

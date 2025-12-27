@@ -7,7 +7,7 @@ namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
-    Dictionary<ulong, BitMask> _componentIndex = new(); 
+    Dictionary<ulong, BitMask> _componentIndex; 
 
     [Variadic(nameof(T0), VariadicCount)]
     public bool Has<T0>(EcsHandle entity) where T0 : struct

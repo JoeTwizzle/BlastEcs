@@ -24,68 +24,82 @@ public sealed partial class FilterBuilder
     }
 
     [Variadic(nameof(T0), EcsWorld.VariadicCount)]
-    public void Inc<T0>() where T0 : struct
+    public FilterBuilder Inc<T0>() where T0 : struct
     {
         // [Variadic: CopyLines()]
         _with.Add(_world.GetHandleToType<T0>().Id);
+        return this;
     }
 
-    public void Inc(EcsHandle kind, EcsHandle target)
+    public FilterBuilder Inc(EcsHandle kind, EcsHandle target)
     {
         _with.Add(new EcsHandle(kind, target).Id);
+        return this;
     }
 
-    public void Inc<TKind>(EcsHandle target) where TKind : struct
+    public FilterBuilder Inc<TKind>(EcsHandle target) where TKind : struct
     {
         _with.Add(new EcsHandle(_world.GetHandleToType<TKind>(), target).Id);
+        return this;
     }
 
-    public void IncRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
+    public FilterBuilder IncRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
     {
         Inc<TKind>(_world.GetHandleToType<TTarget>());
+        return this;
     }
 
     [Variadic(nameof(T0), EcsWorld.VariadicCount)]
-    public void Exc<T0>() where T0 : struct
+    public FilterBuilder Exc<T0>() where T0 : struct
     {
         // [Variadic: CopyLines()]
         _without.Add(_world.GetHandleToType<T0>().Id);
+        return this;
     }
 
-    public void Exc(EcsHandle kind, EcsHandle target)
+    public FilterBuilder Exc(EcsHandle kind, EcsHandle target)
     {
         _without.Add(new EcsHandle(kind, target).Id);
+        return this;
     }
 
-    public void Exc<TKind>(EcsHandle target) where TKind : struct
+    public FilterBuilder Exc<TKind>(EcsHandle target) where TKind : struct
     {
         _without.Add(new EcsHandle(_world.GetHandleToType<TKind>(), target).Id);
+        return this;
     }
 
-    public void ExcRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
+    public FilterBuilder ExcRelation<TKind, TTarget>() where TKind : struct where TTarget : struct
     {
         Exc<TKind>(_world.GetHandleToType<TTarget>());
+        return this;
     }
 
-    public Filter Build()
+    public SimpleQueryKey Build()
     {
-        return new Filter(_world, new([.. _with]), new([.. _without]));
+        return new SimpleQueryKey(_world, new([.. _with]), new([.. _without]));
     }
 }
 
-public sealed class Filter
+public sealed class SimpleQueryKey : IEquatable<SimpleQueryKey>
 {
     public readonly EcsWorld World;
     public readonly TypeCollectionKey Inc;
     public readonly TypeCollectionKey Exc;
 
-    public Filter(EcsWorld ecsWorld, TypeCollectionKey inc, TypeCollectionKey exc)
+    public SimpleQueryKey(EcsWorld ecsWorld, TypeCollectionKey inc, TypeCollectionKey exc)
     {
         World = ecsWorld;
         Inc = inc;
         Exc = exc;
     }
-    //TODO: Benchmark
+
+    public bool Matches(Archetype archetype)
+    {
+        var key = archetype.Key;
+        return key.Contains(Inc) && !key.Contains(Exc);
+    }
+
     public void Each(Action<EcsHandle> action)
     {
         World.InvokeFilter(this, action);
@@ -94,6 +108,24 @@ public sealed class Filter
     public void Each2(Action<EcsHandle> action)
     {
         World.InvokeFilter2(this, action);
+    }
+
+    public bool Equals(SimpleQueryKey? other)
+    {
+        return other?.Inc == Inc && other.Exc == Exc;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is SimpleQueryKey filter && Equals(filter);
+    }
+
+    public override int GetHashCode()
+    {
+        int hashCode = World.WorldId;
+        hashCode = hashCode * 486187739 + Inc.GetHashCode();
+        hashCode = hashCode * 486187739 + Exc.GetHashCode();
+        return hashCode;
     }
 }
 

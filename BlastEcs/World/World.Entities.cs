@@ -57,7 +57,7 @@ public sealed partial class EcsWorld
         entityIndex.Archetype = archetype;
         var gen = entityIndex.Generation = (short)((-entityIndex.Generation) + 1);
         entityIndex.Flags = flags;
-        var entity = new EcsHandle(id, gen, _worldId, flags);
+        var entity = new EcsHandle(id, gen, WorldId, flags);
         if (archetype.IsLocked || archetype.Table.IsLocked)
         {
             entityIndex.TableSlotIndex = -1;
@@ -307,19 +307,19 @@ public sealed partial class EcsWorld
     public EcsHandle GetKindHandle(EcsHandle pair)
     {
         ref EntityIndex entityIndex = ref GetEntityIndex(pair.Entity);
-        return new EcsHandle(pair.Entity, entityIndex.Generation, _worldId, entityIndex.Flags);
+        return new EcsHandle(pair.Entity, entityIndex.Generation, WorldId, entityIndex.Flags);
     }
 
     public EcsHandle GetTargetHandle(EcsHandle pair)
     {
         ref EntityIndex entityIndex = ref GetEntityIndex(pair.Target);
-        return new EcsHandle(pair.Target, entityIndex.Generation, _worldId, entityIndex.Flags);
+        return new EcsHandle(pair.Target, entityIndex.Generation, WorldId, entityIndex.Flags);
     }
 
     public EcsHandle GetEntity(uint id)
     {
         ref EntityIndex entityIndex = ref GetEntityIndex(id);
-        return new EcsHandle(id, entityIndex.Generation, _worldId, entityIndex.Flags);
+        return new EcsHandle(id, entityIndex.Generation, WorldId, entityIndex.Flags);
     }
 
     public EcsHandle GetRelationWithIndefiniteTarget(EcsHandle handle)
