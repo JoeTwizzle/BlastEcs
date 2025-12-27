@@ -286,7 +286,6 @@ public sealed partial class EcsWorld
             if (!Unsafe.IsNullRef(ref set))
             {
                 set.ClearBit(arch.Id);
-                _queryCache
             }
         }
 
