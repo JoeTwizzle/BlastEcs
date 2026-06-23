@@ -7,7 +7,8 @@ namespace BlastEcs;
 
 public sealed partial class EcsWorld
 {
-    Dictionary<ulong, BitMask> _componentIndex; 
+    //For every component store a bitmask of all archetypes that contain this component.
+    readonly Dictionary<ulong, BitMask> _componentIndex;
 
     [Variadic(nameof(T0), VariadicCount)]
     public bool Has<T0>(EcsHandle entity) where T0 : struct

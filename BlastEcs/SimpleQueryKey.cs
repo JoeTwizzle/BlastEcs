@@ -105,11 +105,6 @@ public sealed class SimpleQueryKey : IEquatable<SimpleQueryKey>
         World.InvokeFilter(this, action);
     }
 
-    public void Each2(Action<EcsHandle> action)
-    {
-        World.InvokeFilter2(this, action);
-    }
-
     public bool Equals(SimpleQueryKey? other)
     {
         return other?.Inc == Inc && other.Exc == Exc;

@@ -37,7 +37,7 @@ public class FilterBenchmarks
     [Benchmark]
     public void WorldEntityQuery()
     {
-        filter.Each2(static entity =>
+        filter.Each(entity =>
         {
             var ref1 = _world.GetRef<Transform>(entity);
             var ref2 = _world.GetRef<Velocity>(entity);
